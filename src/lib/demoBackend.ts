@@ -2,7 +2,7 @@
 // It exists only to show the UI with fictional data and can never send a real message.
 import { inServiceWindow } from './format';
 import type {
-  ActionResult, ChangeEvent, Conversation, ConvState, InboxBackend, IntegrationStatus, Message, SendInput, SendResult, StateAction,
+  ActionResult, ChangeEvent, Conversation, ConvState, InboxBackend, IntegrationStatus, Message, Outcome, OutcomeResult, SendInput, SendResult, StateAction,
 } from './types';
 
 const MIN = 60_000, HOUR = 3_600_000;
@@ -14,6 +14,7 @@ function conv(id: string, wa: string, name: string | null, state: ConvState, las
     last_inbound_at: lastInboundAgo === null ? null : ago(lastInboundAgo),
     last_message_at: ago(lastInboundAgo ?? 0), last_message_preview: preview,
     manager_last_read_at: readAgo === null ? null : ago(readAgo),
+    lead_score: null, lead_label: null, lead_reason: null, lead_scored_at: null, outcome: null, outcome_at: null,
     contacts: { wa_id: wa, display_name: name },
   };
 }
@@ -37,6 +38,12 @@ function seed(): { convs: Conversation[]; msgs: Record<string, Message[]> } {
     conv('d4', '996222888999', 'Нурлан (турагентство)', 'ai_active', 30 * HOUR, '[Изображение — ассистент не обрабатывает изображения]', 29 * HOUR),
     conv('d5', '996700999000', 'Динара', 'ai_active', 3 * HOUR, 'Спасибо, всё понятно!', 3 * HOUR - MIN),
   ];
+  const score = (c: Conversation, n: number, reason: string) => {
+    c.lead_score = n; c.lead_label = n >= 70 ? 'hot' : n >= 40 ? 'warm' : 'cold'; c.lead_reason = reason; c.lead_scored_at = ago(MIN);
+  };
+  score(convs[0], 84, 'Спросил цену и оплату частями, просит менеджера');
+  score(convs[1], 52, 'Интересуется языком группы, цену уже знает');
+  score(convs[3], 18, 'Только прислал изображение, вопросов о покупке нет');
   const msgs: Record<string, Message[]> = {
     d1: [
       msg('d1', 'customer', 'Здравствуйте! Сколько стоит курс «SMM с нуля»?', 20 * MIN, 'received'),
@@ -95,6 +102,15 @@ export function createDemoBackend(): InboxBackend {
       if (action === 'mark_read' || action === 'takeover') c.manager_last_read_at = new Date().toISOString();
       emit({ table: 'conversations', conversationId: id });
       return { ok: true, state: c.state };
+    },
+    async setOutcome(id, outcome: Outcome | 'open'): Promise<OutcomeResult> {
+      await sleep(300);
+      const c = byId(id);
+      if (!c) return { ok: false, error: 'Диалог не найден.' };
+      c.outcome = outcome === 'open' ? null : outcome;
+      c.outcome_at = outcome === 'open' ? null : new Date().toISOString();
+      emit({ table: 'conversations', conversationId: id });
+      return { ok: true, outcome: c.outcome };
     },
     async sendReply(input: SendInput): Promise<SendResult> {
       await sleep(400);

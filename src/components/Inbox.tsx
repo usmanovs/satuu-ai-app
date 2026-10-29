@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ChatPanel } from '@/components/ChatPanel';
 import { ConversationList, type Filter } from '@/components/ConversationList';
 import { formatAgo, isUnread } from '@/lib/format';
-import type { Conversation, InboxBackend, IntegrationStatus, Message, SendInput, SendResult } from '@/lib/types';
+import type { Conversation, InboxBackend, IntegrationStatus, Message, Outcome, SendInput, SendResult } from '@/lib/types';
 
 interface Props {
   backend: InboxBackend;
@@ -30,6 +30,9 @@ export function Inbox({ backend, businessName, onSignOut }: Props) {
   const [messages, setMessages] = useState<Message[] | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
   const [query, setQuery] = useState('');
+  const [sortByLead, setSortByLead] = useState(false);
+  const [outcomeBusy, setOutcomeBusy] = useState<string | null>(null);
+  const [outcomeError, setOutcomeError] = useState<Record<string, string>>({});
   const [integration, setIntegration] = useState<IntegrationStatus | null>(null);
   const [live, setLive] = useState<'connecting' | 'on' | 'off'>('connecting');
   const [pending, setPending] = useState<Record<string, 'takeover' | 'resume'>>({});
@@ -94,6 +97,15 @@ export function Inbox({ backend, businessName, onSignOut }: Props) {
     if (selectedRef.current === id) await refreshMessages(id);
   }
 
+  async function runOutcome(id: string, outcome: Outcome | 'open') {
+    setOutcomeBusy(id);
+    setOutcomeError((e) => { const { [id]: _drop, ...rest } = e; return rest; });
+    const r = await backend.setOutcome(id, outcome);
+    setOutcomeBusy(null);
+    if (!r.ok) setOutcomeError((e) => ({ ...e, [id]: r.error }));
+    await refreshList(); // shown only after the server confirms
+  }
+
   async function send(input: SendInput): Promise<SendResult> {
     const r = await backend.sendReply(input);
     await Promise.all([refreshMessages(input.conversationId), refreshList()]);
@@ -136,6 +148,7 @@ export function Inbox({ backend, businessName, onSignOut }: Props) {
           <ConversationList
             conversations={convs} loadError={loadError} selectedId={selectedId} onSelect={setSelectedId}
             filter={filter} onFilter={setFilter} query={query} onQuery={setQuery} now={now}
+            sortByLead={sortByLead} onSortByLead={setSortByLead}
           />
         </div>
         <section className={`${selectedId ? 'block' : 'hidden md:block'} h-full min-h-0`}>
@@ -147,6 +160,8 @@ export function Inbox({ backend, businessName, onSignOut }: Props) {
               onTakeover={() => runAction(selected.id, 'takeover')}
               onResume={() => runAction(selected.id, 'resume')}
               onSend={send}
+              onOutcome={(o) => runOutcome(selected.id, o)}
+              outcomeBusy={outcomeBusy === selected.id} outcomeError={outcomeError[selected.id]}
               onBack={() => setSelectedId(null)}
             />
           ) : (

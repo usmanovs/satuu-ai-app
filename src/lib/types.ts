@@ -2,6 +2,8 @@ export type ConvState = 'ai_active' | 'human_requested' | 'human_handling';
 export type MsgStatus = 'received' | 'pending' | 'accepted' | 'sent' | 'delivered' | 'read' | 'failed';
 export type SenderRole = 'customer' | 'ai' | 'manager';
 export type StateAction = 'takeover' | 'resume' | 'mark_read';
+export type LeadLabel = 'cold' | 'warm' | 'hot';
+export type Outcome = 'won' | 'lost';
 
 export interface Conversation {
   id: string;
@@ -15,6 +17,14 @@ export interface Conversation {
   last_message_at: string | null;
   last_message_preview: string | null;
   manager_last_read_at: string | null;
+  /** AI estimate of buying likelihood, 0-100. An estimate, not a probability. */
+  lead_score: number | null;
+  lead_label: LeadLabel | null;
+  lead_reason: string | null;
+  lead_scored_at: string | null;
+  /** Set by a manager: the real result. */
+  outcome: Outcome | null;
+  outcome_at: string | null;
   contacts: { wa_id: string; display_name: string | null };
 }
 
@@ -45,6 +55,8 @@ export interface IntegrationStatus {
   last_ingest_at: string | null;
 }
 
+export type OutcomeResult = { ok: true; outcome: Outcome | null } | { ok: false; error: string };
+
 export type ActionResult = { ok: true; state: ConvState } | { ok: false; error: string };
 
 export type SendResult =
@@ -72,6 +84,7 @@ export interface InboxBackend {
   listMessages(conversationId: string): Promise<Message[]>;
   subscribe(onChange: (e: ChangeEvent) => void, onStatus: (s: 'on' | 'off') => void): () => void;
   action(conversationId: string, action: StateAction): Promise<ActionResult>;
+  setOutcome(conversationId: string, outcome: Outcome | 'open'): Promise<OutcomeResult>;
   sendReply(input: SendInput): Promise<SendResult>;
   integrationStatus(): Promise<IntegrationStatus>;
 }

@@ -1,5 +1,6 @@
 // n8n -> Supabase contracts. Auth: `Authorization: Bearer <integration key>`.
-// Routes (POST): /ingest-message, /ai-permission, /request-human, /record-outbound, /message-status
+// Routes (POST): /ingest-message, /ingest-echo, /lead-context, /lead-score, /ai-permission, /request-human,
+// /claim-human-send, /record-outbound, /message-status
 import {
   errorResponse, HttpError, json, preflight, readJson, requireIntegration, rpc,
 } from '../_shared/lib.ts';
@@ -42,6 +43,32 @@ Deno.serve(async (req) => {
           p_text: optStr(body, 'text'),
           p_ts: parseTimestamp(body.timestamp),
           p_phone_number_id: optStr(body, 'phone_number_id', 40),
+        });
+        return json(result);
+      }
+
+      case 'lead-context': {
+        // Recent messages of one chat, for the buying-signal scorer. Read-only.
+        const limit = Number.isInteger(body.limit) ? (body.limit as number) : 12;
+        const result = await rpc('get_lead_context', {
+          p_business: businessId,
+          p_wa_id: reqStr(body, 'sender_id', 64),
+          p_limit: limit,
+        });
+        return json(result);
+      }
+
+      case 'lead-score': {
+        // AI estimate of buying likelihood (0-100); the label is derived in the database.
+        const score = body.score;
+        if (typeof score !== 'number' || !Number.isFinite(score)) {
+          throw new HttpError(422, 'invalid_field', 'score должен быть числом от 0 до 100.');
+        }
+        const result = await rpc('record_lead_score', {
+          p_business: businessId,
+          p_wa_id: reqStr(body, 'sender_id', 64),
+          p_score: Math.round(score),
+          p_reason: optStr(body, 'reason', 200),
         });
         return json(result);
       }

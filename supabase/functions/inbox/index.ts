@@ -1,6 +1,6 @@
 // Dashboard backend. Auth: the manager's Supabase JWT. Business and manager identity are
 // derived from it; any business_id / user_id in the body is ignored.
-// Routes: POST /conversation-action, POST /send-reply, GET|POST /status
+// Routes: POST /conversation-action, POST /conversation-outcome, POST /send-reply, GET|POST /status
 import {
   admin, errorResponse, HttpError, json, preflight, readJson, requireManager, rpc,
 } from '../_shared/lib.ts';
@@ -49,6 +49,16 @@ Deno.serve(async (req) => {
       if (!UUID.test(conversationId)) throw new HttpError(422, 'invalid_field', 'Недопустимый conversation_id.');
       const result = await rpc('set_conversation_state', {
         p_business: businessId, p_conversation: conversationId, p_action: action, p_user: userId,
+      });
+      return json(result);
+    }
+
+    if (route === 'conversation-outcome') {
+      const conversationId = reqStr(body, 'conversation_id', 36);
+      const outcome = reqStr(body, 'outcome', 10);
+      if (!UUID.test(conversationId)) throw new HttpError(422, 'invalid_field', 'Недопустимый conversation_id.');
+      const result = await rpc('set_conversation_outcome', {
+        p_business: businessId, p_conversation: conversationId, p_outcome: outcome, p_user: userId,
       });
       return json(result);
     }

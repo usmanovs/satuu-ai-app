@@ -1,9 +1,9 @@
-import { Search } from 'lucide-react';
+import { ArrowDownWideNarrow, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { displayName, formatListTime, isUnread, STATE_LABEL } from '@/lib/format';
-import type { Conversation, ConvState } from '@/lib/types';
+import type { Conversation, ConvState, LeadLabel } from '@/lib/types';
 
 export type Filter = 'all' | ConvState;
 
@@ -13,6 +13,17 @@ const FILTERS: { id: Filter; label: string }[] = [
   { id: 'human_requested', label: 'Нужен человек' },
   { id: 'human_handling', label: 'У менеджера' },
 ];
+
+export const LEAD_LABEL: Record<LeadLabel, string> = { hot: 'Горячий', warm: 'Тёплый', cold: 'Холодный' };
+export const leadTone = { hot: 'red', warm: 'amber', cold: 'neutral' } as const;
+
+/** What the manager sees: the real outcome wins over the AI estimate. */
+export function LeadBadge({ c }: { c: Conversation }) {
+  if (c.outcome === 'won') return <Badge tone="emerald">Купил</Badge>;
+  if (c.outcome === 'lost') return <Badge tone="neutral">Не купит</Badge>;
+  if (c.lead_score === null || c.lead_label === null) return null;
+  return <Badge tone={leadTone[c.lead_label]} title={c.lead_reason ?? undefined}>{LEAD_LABEL[c.lead_label]} · {c.lead_score}</Badge>;
+}
 
 export const stateTone = { ai_active: 'emerald', human_requested: 'amber', human_handling: 'blue' } as const;
 
@@ -31,12 +42,14 @@ interface Props {
   query: string;
   onQuery: (q: string) => void;
   now: number;
+  sortByLead: boolean;
+  onSortByLead: (v: boolean) => void;
 }
 
-export function ConversationList({ conversations, loadError, selectedId, onSelect, filter, onFilter, query, onQuery, now }: Props) {
+export function ConversationList({ conversations, loadError, selectedId, onSelect, filter, onFilter, query, onQuery, now, sortByLead, onSortByLead }: Props) {
   const all = conversations ?? [];
   const q = query.trim().toLowerCase();
-  const visible = all.filter((c) => {
+  const filtered = all.filter((c) => {
     if (filter !== 'all' && c.state !== filter) return false;
     if (!q) return true;
     return (
@@ -45,6 +58,9 @@ export function ConversationList({ conversations, loadError, selectedId, onSelec
       (c.last_message_preview ?? '').toLowerCase().includes(q)
     );
   });
+  // open leads with the highest buying signal first; finished chats (won/lost) and unscored ones go last
+  const rank = (c: Conversation) => (c.outcome ? -2 : c.lead_score ?? -1);
+  const visible = sortByLead ? [...filtered].sort((a, b) => rank(b) - rank(a)) : filtered;
   const count = (f: Filter) => (f === 'all' ? all.length : all.filter((c) => c.state === f).length);
 
   return (
@@ -53,6 +69,16 @@ export function ConversationList({ conversations, loadError, selectedId, onSelec
         <div className="relative">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input value={query} onChange={(e) => onQuery(e.target.value)} placeholder="Поиск по имени, номеру, тексту" className="pl-9" aria-label="Поиск" />
+        </div>
+        <div className="flex items-center justify-between gap-2">
+          <button
+            onClick={() => onSortByLead(!sortByLead)}
+            aria-pressed={sortByLead}
+            title="Сначала диалоги с самой высокой вероятностью покупки (оценка AI)"
+            className={cn('inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1 text-xs font-medium transition-colors', sortByLead ? 'border-primary bg-primary/10 text-primary' : 'bg-card hover:bg-muted')}
+          >
+            <ArrowDownWideNarrow className="size-3.5" />По вероятности покупки
+          </button>
         </div>
         <div className="flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist" aria-label="Фильтр по статусу">
           {FILTERS.map((f) => (
@@ -101,7 +127,7 @@ export function ConversationList({ conversations, loadError, selectedId, onSelec
                       <span className={cn('truncate text-[13px]', unread ? 'text-foreground' : 'text-muted-foreground')}>{c.last_message_preview ?? '—'}</span>
                       {unread && <span className="ml-auto size-2.5 shrink-0 rounded-full bg-primary" aria-label="Непрочитано" />}
                     </span>
-                    <span className="mt-1.5 block"><Badge tone={stateTone[c.state]}>{STATE_LABEL[c.state]}</Badge></span>
+                    <span className="mt-1.5 flex flex-wrap items-center gap-1.5"><Badge tone={stateTone[c.state]}>{STATE_LABEL[c.state]}</Badge><LeadBadge c={c} /></span>
                   </span>
                 </button>
               </li>

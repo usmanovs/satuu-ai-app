@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Bot, Hand, Loader2, MessageCircle, Phone, Send, TriangleAlert } from 'lucide-react';
+import { ArrowLeft, Bot, Check, Hand, Loader2, MessageCircle, Phone, RotateCcw, Send, TriangleAlert, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/input';
 import { MessageBubble } from '@/components/MessageBubble';
-import { stateTone } from '@/components/ConversationList';
+import { LeadBadge, stateTone } from '@/components/ConversationList';
 import { displayName, formatAgo, formatDay, inServiceWindow, newIdempotencyKey, sameDay, STATE_LABEL, windowRemaining } from '@/lib/format';
-import type { Conversation, IntegrationStatus, Message, SendInput, SendResult } from '@/lib/types';
+import type { Conversation, IntegrationStatus, Message, Outcome, SendInput, SendResult } from '@/lib/types';
 
 interface Props {
   conv: Conversation;
@@ -19,13 +19,16 @@ interface Props {
   onTakeover: () => void;
   onResume: () => void;
   onSend: (input: SendInput) => Promise<SendResult>;
+  onOutcome: (outcome: Outcome | 'open') => void;
+  outcomeBusy: boolean;
+  outcomeError: string | undefined;
   onBack: () => void;
 }
 
 type Notice = { tone: 'error' | 'warn'; text: string };
 interface Attempt { key: string; text: string; template: boolean }
 
-export function ChatPanel({ conv, messages, integration, demo, now, pendingAction, actionError, onTakeover, onResume, onSend, onBack }: Props) {
+export function ChatPanel({ conv, messages, integration, demo, now, pendingAction, actionError, onTakeover, onResume, onSend, onOutcome, outcomeBusy, outcomeError, onBack }: Props) {
   const [text, setText] = useState('');
   const [sending, setSending] = useState<Attempt | null>(null);
   const [attempt, setAttempt] = useState<Attempt | null>(null); // kept only after an ambiguous network failure
@@ -88,6 +91,7 @@ export function ChatPanel({ conv, messages, integration, demo, now, pendingActio
           <div className="flex items-center gap-2">
             <h2 className="truncate text-[15px] font-semibold">{displayName(conv)}</h2>
             <Badge tone={stateTone[conv.state]}>{STATE_LABEL[conv.state]}</Badge>
+            <LeadBadge c={conv} />
           </div>
           <p className="truncate text-xs text-muted-foreground">+{conv.contacts.wa_id}</p>
         </div>
@@ -120,6 +124,31 @@ export function ChatPanel({ conv, messages, integration, demo, now, pendingActio
           )}
         </div>
       </header>
+
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b bg-card px-4 py-2 text-[13px]">
+        <p className="min-w-0 flex-1 text-muted-foreground">
+          {conv.lead_score !== null
+            ? <>Оценка AI (не вероятность): <b className="text-foreground">{conv.lead_score}/100</b>{conv.lead_reason ? ` — ${conv.lead_reason}` : ''}</>
+            : 'Оценка покупки появится после следующего сообщения клиента.'}
+        </p>
+        <div className="flex shrink-0 items-center gap-1.5" role="group" aria-label="Итог диалога">
+          {conv.outcome ? (
+            <Button variant="outline" size="sm" onClick={() => onOutcome('open')} disabled={outcomeBusy} title="Снять отметку">
+              {outcomeBusy ? <Loader2 className="animate-spin" /> : <RotateCcw />}<span>{conv.outcome === 'won' ? 'Купил — сбросить' : 'Не купит — сбросить'}</span>
+            </Button>
+          ) : (
+            <>
+              <Button variant="outline" size="sm" onClick={() => onOutcome('won')} disabled={outcomeBusy}>
+                {outcomeBusy ? <Loader2 className="animate-spin" /> : <Check />}<span>Купил</span>
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => onOutcome('lost')} disabled={outcomeBusy}>
+                <X /><span>Не купит</span>
+              </Button>
+            </>
+          )}
+        </div>
+        {outcomeError && <p className="basis-full text-red-700">Не удалось сохранить итог: {outcomeError}</p>}
+      </div>
 
       {(pendingAction || actionError || pauseNote || conv.state_note) && (
         <div className="space-y-1 border-b bg-card px-4 py-2 text-[13px]">

@@ -14,6 +14,7 @@ const DB_ERRORS: Record<string, [number, string]> = {
   invalid_status: [422, 'Недопустимый статус.'],
   invalid_stage: [422, 'stage должен быть before_generate или before_send.'],
   invalid_action: [422, 'Недопустимое действие.'],
+  invalid_outcome: [422, 'outcome должен быть won, lost или open.'],
   invalid_text: [422, 'Текст сообщения пуст или слишком длинный.'],
   invalid_idempotency_key: [422, 'Недопустимый ключ идемпотентности.'],
   unknown_conversation: [404, 'Диалог не найден.'],

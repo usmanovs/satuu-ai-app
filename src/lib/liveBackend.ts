@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
-  ActionResult, ChangeEvent, Conversation, InboxBackend, IntegrationStatus, Message, SendInput, SendResult, StateAction,
+  ActionResult, ChangeEvent, Conversation, InboxBackend, IntegrationStatus, Message, Outcome, OutcomeResult, SendInput, SendResult, StateAction,
 } from './types';
 
 interface FnResponse { status: number; json: any }
@@ -71,6 +71,16 @@ export function createLiveBackend(supabase: SupabaseClient, functionsBaseUrl: st
         return { ok: false, error: r.json?.error?.message ?? `Ошибка сервера (${r.status})` };
       } catch {
         return { ok: false, error: 'Нет связи с сервером. Действие не подтверждено.' };
+      }
+    },
+
+    async setOutcome(conversationId, outcome: Outcome | 'open'): Promise<OutcomeResult> {
+      try {
+        const r = await callFn('inbox/conversation-outcome', { conversation_id: conversationId, outcome });
+        if (r.status === 200 && r.json && 'outcome' in r.json) return { ok: true, outcome: r.json.outcome };
+        return { ok: false, error: r.json?.error?.message ?? `Ошибка сервера (${r.status})` };
+      } catch {
+        return { ok: false, error: 'Нет связи с сервером. Результат не сохранён.' };
       }
     },
 
