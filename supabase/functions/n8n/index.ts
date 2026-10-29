@@ -31,6 +31,21 @@ Deno.serve(async (req) => {
         return json(result);
       }
 
+      case 'ingest-echo': {
+        // Coexistence: a message the manager typed in the WhatsApp Business app (Meta smb_message_echoes).
+        // Recorded as a manager message; the AI is paused for that conversation.
+        const result = await rpc('ingest_manager_echo', {
+          p_business: businessId,
+          p_to_wa_id: reqStr(body, 'to', 64),
+          p_provider_message_id: reqStr(body, 'provider_message_id', 256),
+          p_type: optStr(body, 'type', 40) ?? 'text',
+          p_text: optStr(body, 'text'),
+          p_ts: parseTimestamp(body.timestamp),
+          p_phone_number_id: optStr(body, 'phone_number_id', 40),
+        });
+        return json(result);
+      }
+
       case 'ai-permission': {
         const expected = body.expected_state_version;
         if (expected !== undefined && expected !== null && !Number.isInteger(expected)) {

@@ -211,3 +211,20 @@ Two workflows exist in n8n, both **inactive**. Nothing was run.
 - **Satuu Human Send**: Webhook → Validate → `claim-human-send` → respond → WhatsApp send (retries off) → `record-outbound` (`accepted` / `failed`). The webhook trigger is **disabled on purpose** and has no credential: n8n tried to attach the integration-key credential, which is the wrong secret. Create Header Auth credential `Satuu send webhook` (name `Authorization`, value `Bearer <webhook secret>`), select it on the webhook node, then enable the node.
 
 Open before activation: `N8N_SEND_WEBHOOK_URL` and `N8N_SEND_WEBHOOK_SECRET` in Supabase (Edge Functions → Secrets); the OpenAI node has an invalid `builtInTools` setting and no credential; the agent prompt still says no handoff exists; only one WhatsApp trigger can be live per Meta app, so the live bot must be deactivated at cutover.
+
+## Coexistence (WhatsApp Business app + AI on the same number)
+
+**Implemented (backend + n8n, 2026-10-29):** a message the manager types in the WhatsApp Business app arrives from Meta as `smb_message_echoes` (`message_echoes[]` with `from` = business number, `to` = customer, `id`, `timestamp`, `type`, content). Stage A's Flatten node turns it into `kind: "echo"` (with `sender_id` = the **customer**), `Is Echo?` routes it to `POST /n8n/ingest-echo`:
+```json
+{ "business_id": "<BUSINESS_ID>", "to": "16505551234", "provider_message_id": "wamid.…", "type": "text", "text": "Здравствуйте, это менеджер", "timestamp": "1700255121", "phone_number_id": "106540352242922" }
+```
+→ `{ "duplicate": false, "message_id": "…", "conversation_id": "…", "state": "human_handling", "state_version": 3, "state_changed": true }`
+
+Effects (SQL `ingest_manager_echo`, verified in a rolled-back transaction): recorded as a `manager` message with status `sent`; the AI is **paused** (`human_handling`, note «Менеджер ответил из приложения WhatsApp: AI приостановлен»), including from `human_requested`; idempotent on `provider_message_id`; an echo to an unknown customer creates the conversation already paused; media/other types get an honest placeholder; echoes do not open the 24 h window; receipts that arrived earlier are applied. The manager returns the chat to the AI with «Вернуть AI» as before.
+
+**NOT done / NOT verified (needs Meta):**
+- The number must actually be onboarded in coexistence. Per Meta's documentation this onboarding is performed through Embedded Signup by a Solution Partner / Tech Provider; a self-serve path for a business is not described. Eligibility for a US number is not confirmed.
+- The Meta app must be subscribed to the webhook field `smb_message_echoes` (plus `history`, `smb_app_state_sync`, `account_update`). It is **unknown whether n8n's WhatsApp Trigger node forwards `smb_message_echoes` events**; if it does not, deliver them with a webhook override to a plain n8n Webhook node and run the same Flatten → Ingest Echo steps.
+- Edited/deleted app messages arrive as separate events and are not handled.
+- Voice/video calls are listed by Meta among features unsupported for coexistence numbers; calling inside the app on such a number must be confirmed with Meta.
+- Not tested with a real echo event.
