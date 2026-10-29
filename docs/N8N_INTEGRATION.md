@@ -31,6 +31,7 @@ Define one workflow-level constant `SATUU_BUSINESS_ID` (from `provision_owner.sq
   "text": "Сколько стоит курс?",
   "timestamp": "1793276163",
   "display_name": "Айбек",
+  "phone_number_id": "123456789012345",
   "detect_human": true
 }
 ```
@@ -50,6 +51,7 @@ Response `200` (also `200` for a duplicate, with `duplicate: true`):
   "human_requested_now": false
 }
 ```
+- `phone_number_id` (optional, digits only) is the Cloud API id of the business number from the trigger's metadata. The backend remembers it, and `claim-human-send` returns it, so human replies are sent from the SAME number. Until one inbound message with it has been ingested, `claim-human-send` answers `claimed:false, reason:phone_number_unknown` (without consuming the claim).
 - `human_requested_now` is `true` only when THIS message moved the chat `ai_active → human_requested` (phrase detection). Use it to send the customer one notice; duplicates and later messages in a paused chat return `false`.
 - `supported: false` for image/audio/video/document/sticker/location/…: the message is stored with a placeholder such as `[Изображение — ассистент не обрабатывает изображения]`. **Do not send these to the AI.**
 - `type` values `status`, `delivered`, `read`, `sent`, `failed` are refused with `422 not_a_message`. Receipts go to `/message-status`.
@@ -106,9 +108,9 @@ There is **no customer id parameter**. The conversation is derived from `trigger
 ```json
 { "business_id": "…", "idempotency_key": "6f1c0f3e-0b8e-4a39-9d52-5a2d7f6b9c11" }
 ```
-→ first caller: `{ "claimed": true, "message_id": "…", "to": "996700123456", "type": "text", "text": "Здравствуйте!", "template_name": null }`
+→ first caller: `{ "claimed": true, "message_id": "…", "to": "996700123456", "type": "text", "text": "Здравствуйте!", "template_name": null, "phone_number_id": "123456789012345" }`
 → every later caller: `{ "claimed": false, "reason": "already_claimed", "status": "pending" }`
-Other reasons: `not_pending` (already accepted/failed), `not_human_handling` (the manager returned the chat to the AI before n8n got to it). Unknown key or another business's key: `404`.
+Other reasons: `phone_number_unknown`, `not_pending` (already accepted/failed), `not_human_handling` (the manager returned the chat to the AI before n8n got to it). Unknown key or another business's key: `404`.
 The claim is one row-locked UPDATE in Postgres, so concurrent duplicate deliveries produce exactly one `claimed:true` (verified with 6 parallel calls). **n8n must send exactly the recipient and text returned by the claim, not the webhook body.**
 
 ## 4. Human replies (dashboard → n8n)
@@ -201,3 +203,11 @@ Processing rules for the flattened items:
 4. **Receipts before records.** Handled by buffering (`status_events`), but a receipt for a message that is never recorded (for example an AI send whose `record-outbound` call failed permanently) stays unattached.
 5. **`accepted` is not `sent`.** The status moves to `sent`/`delivered` only when Meta's webhook says so. If the status branch (step 9) is not wired, messages stay at «Принято к отправке» forever.
 6. **Replies are not cancelled by resume/takeover after they are sent.** Obviously, but worth saying.
+
+## Built in n8n (2026-10-29) — inactive, untested
+
+Two workflows exist in n8n, both **inactive**. Nothing was run.
+- **Satuu Inbox Integration - Stage A** (copy of the bot): flatten → ingest → permission before generate → AI Agent → permission before send → send AI reply (retries off) → record (`accepted`); receipts → `message-status`; one-time notice when `human_requested_now`. The old Data Table nodes remain on the canvas, disconnected.
+- **Satuu Human Send**: Webhook → Validate → `claim-human-send` → respond → WhatsApp send (retries off) → `record-outbound` (`accepted` / `failed`). The webhook trigger is **disabled on purpose** and has no credential: n8n tried to attach the integration-key credential, which is the wrong secret. Create Header Auth credential `Satuu send webhook` (name `Authorization`, value `Bearer <webhook secret>`), select it on the webhook node, then enable the node.
+
+Open before activation: `N8N_SEND_WEBHOOK_URL` and `N8N_SEND_WEBHOOK_SECRET` in Supabase (Edge Functions → Secrets); the OpenAI node has an invalid `builtInTools` setting and no credential; the agent prompt still says no handoff exists; only one WhatsApp trigger can be live per Meta app, so the live bot must be deactivated at cutover.

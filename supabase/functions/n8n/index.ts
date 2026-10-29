@@ -25,6 +25,8 @@ Deno.serve(async (req) => {
           p_ts: parseTimestamp(body.timestamp),
           p_display_name: optStr(body, 'display_name', 200),
           p_detect_human: body.detect_human === false ? false : true,
+          // Cloud API phone_number_id of the business number; remembered so human replies are sent from it.
+          p_phone_number_id: optStr(body, 'phone_number_id', 40),
         });
         return json(result);
       }

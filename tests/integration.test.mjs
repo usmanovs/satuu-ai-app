@@ -38,7 +38,7 @@ async function rest(table, token, query = 'select=*') {
 }
 const n8n = (route, body, key = 'test-key-A') => call(`n8n/${route}`, { token: key, body });
 const ingest = (sender, pid, text, extra = {}) =>
-  n8n('ingest-message', { business_id: A, sender_id: sender, provider_message_id: pid, type: 'text', text, timestamp: new Date().toISOString(), ...extra });
+  n8n('ingest-message', { business_id: A, sender_id: sender, provider_message_id: pid, type: 'text', text, timestamp: new Date().toISOString(), phone_number_id: '123456789012345', ...extra });
 const perm = (sender, stage = 'before_generate', v) =>
   n8n('ai-permission', { business_id: A, sender_id: sender, stage, ...(v ? { expected_state_version: v } : {}) });
 
