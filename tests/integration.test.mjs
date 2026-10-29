@@ -165,6 +165,9 @@ describe('takeover / resume and the AI gate', () => {
   test('a request for a person pauses AI; request-human never downgrades human_handling', async () => {
     const s = wa(9); const r = await ingest(s, uid('wamid.h'), 'Позовите менеджера, пожалуйста');
     assert.equal(r.json.state, 'human_requested'); assert.equal(r.json.ai_allowed, false);
+    assert.equal(r.json.human_requested_now, true, 'this message caused the change: notify the customer once');
+    const again = await ingest(s, uid('wamid.h2'), 'Алло, позовите менеджера!');
+    assert.equal(again.json.human_requested_now, false, 'already paused: no second notice');
     assert.equal((await perm(s)).json.allowed, false);
     const okPid = uid('wamid.ok');
     const ok = await ingest(wa(10), okPid, 'Нас будет 3 человека, сколько стоит?');

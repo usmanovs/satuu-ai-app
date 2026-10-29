@@ -46,9 +46,11 @@ Response `200` (also `200` for a duplicate, with `duplicate: true`):
   "state": "ai_active",
   "state_version": 1,
   "ai_allowed": true,
-  "supported": true
+  "supported": true,
+  "human_requested_now": false
 }
 ```
+- `human_requested_now` is `true` only when THIS message moved the chat `ai_active → human_requested` (phrase detection). Use it to send the customer one notice; duplicates and later messages in a paused chat return `false`.
 - `supported: false` for image/audio/video/document/sticker/location/…: the message is stored with a placeholder such as `[Изображение — ассистент не обрабатывает изображения]`. **Do not send these to the AI.**
 - `type` values `status`, `delivered`, `read`, `sent`, `failed` are refused with `422 not_a_message`. Receipts go to `/message-status`.
 - A conservative RU/KY phrase list (e.g. «позовите менеджера», «адам менен сүйлөшкүм») moves an `ai_active` conversation to `human_requested`. Set `detect_human: false` to switch it off.
