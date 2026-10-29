@@ -2,7 +2,7 @@
 // It exists only to show the UI with fictional data and can never send a real message.
 import { inServiceWindow } from './format';
 import type {
-  ActionResult, ChangeEvent, Conversation, ConvState, InboxBackend, IntegrationStatus, Me, Member, Message, Outcome, OutcomeResult, SendInput, SendResult, SimpleResult, StateAction, TeamStats,
+  ActionResult, ChangeEvent, Conversation, ConvState, InboxBackend, IntegrationStatus, LinkResult, Me, Member, Message, Outcome, OutcomeResult, SendInput, SendResult, SimpleResult, StateAction, TeamStats,
 } from './types';
 
 const MIN = 60_000, HOUR = 3_600_000;
@@ -130,11 +130,12 @@ export function createDemoBackend(): InboxBackend {
       emit({ table: 'conversations', conversationId: id });
       return { ok: true };
     },
-    async addMember(input): Promise<SimpleResult> {
+    async addMember(input): Promise<LinkResult> {
       await sleep(300);
       members.push({ user_id: `demo-${members.length}`, email: input.email, display_name: input.name || null, role: input.role, active: true });
-      return { ok: true };
+      return { ok: true, link: 'https://demo.invalid/одноразовая-ссылка-демо' };
     },
+    async memberLink(): Promise<LinkResult> { return { ok: true, link: 'https://demo.invalid/одноразовая-ссылка-демо' }; },
     async updateMember(userId, patch): Promise<SimpleResult> {
       const m = members.find((x) => x.user_id === userId);
       if (!m || m.role === 'owner') return { ok: false, error: 'Недостаточно прав для этого действия.' };

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { Session, SupabaseClient } from '@supabase/supabase-js';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Inbox } from '@/components/Inbox';
 import { Login } from '@/components/Login';
 import { createDemoBackend } from '@/lib/demoBackend';
@@ -16,6 +17,34 @@ function Screen({ title, children }: { title: string; children: React.ReactNode 
         {children}
       </div>
     </div>
+  );
+}
+
+/** Invite and password-reset links land here with type=invite|recovery in the URL fragment. Captured before supabase-js clears it. */
+let linkNeedsPassword = typeof window !== 'undefined' && /(?:[#&?])type=(invite|recovery)\b/.test(window.location.hash + window.location.search);
+
+function SetPassword({ client, onDone }: { client: SupabaseClient; onDone: () => void }) {
+  const [pw, setPw] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  async function submit(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy(true); setError(null);
+    const { error: err } = await client.auth.updateUser({ password: pw });
+    setBusy(false);
+    if (err) { setError(err.message); return; }
+    linkNeedsPassword = false;
+    onDone();
+  }
+  return (
+    <Screen title="Задайте пароль">
+      <p>Придумайте пароль для входа в панель. Он нужен только вам.</p>
+      <form onSubmit={submit} className="space-y-3">
+        <Input type="password" required minLength={8} autoFocus placeholder="Пароль (от 8 символов)" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" />
+        {error && <p className="text-red-700">{error}</p>}
+        <Button type="submit" disabled={busy} className="w-full">{busy ? <Loader2 className="animate-spin" /> : null}Сохранить и войти</Button>
+      </form>
+    </Screen>
   );
 }
 
@@ -51,13 +80,15 @@ function Authenticated({ client, session }: { client: SupabaseClient; session: S
 
 function LiveApp({ client }: { client: SupabaseClient }) {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
+  const [needsPassword, setNeedsPassword] = useState(linkNeedsPassword);
   useEffect(() => {
     client.auth.getSession().then(({ data }) => setSession(data.session));
-    const { data } = client.auth.onAuthStateChange((_e, s) => setSession(s));
+    const { data } = client.auth.onAuthStateChange((e, s) => { if (e === 'PASSWORD_RECOVERY') setNeedsPassword(true); setSession(s); });
     return () => data.subscription.unsubscribe();
   }, [client]);
   if (session === undefined) return <div className="grid min-h-dvh place-items-center"><Loader2 className="size-6 animate-spin text-muted-foreground" /></div>;
   if (!session) return <Login supabase={client} />;
+  if (needsPassword) return <SetPassword client={client} onDone={() => setNeedsPassword(false)} />;
   return <Authenticated client={client} session={session} />;
 }
 

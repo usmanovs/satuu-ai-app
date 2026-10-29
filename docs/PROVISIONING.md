@@ -65,5 +65,5 @@ The «human replies» suite calls the `inbox-selftest` and `mock-n8n` functions 
 
 - Permissions are enforced in Postgres (row-level security for reads, permission checks inside every write function), not only in the UI.
 - When a customer asks for a person, the chat is auto-assigned to the active manager with the fewest open human chats; a chat that already has a manager keeps them. With no manager yet, only owner/director see it.
-- The owner adds teammates on the dashboard's **Команда** page (email, role, temporary password). Each person belongs to exactly one business.
+- The owner adds teammates on the dashboard's **Команда** page (email, name, role). No password is typed: the page shows a one-time invite link, the teammate opens it and sets their own password. The same page has a **Ссылка для входа** button that makes a new one-time link for a forgotten password. Each person belongs to exactly one business.
 - Verify permissions any time with `supabase/tests/rbac.sql` (rolls back everything it creates).

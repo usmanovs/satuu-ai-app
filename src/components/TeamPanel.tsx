@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { KeyRound, Loader2, Trash2, UserPlus } from 'lucide-react';
+import { Copy, KeyRound, Link2, Loader2, Trash2, UserPlus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -117,8 +117,11 @@ export function TeamPanel({ backend, me, members, onMembersChanged, onChangePass
 function MembersSection({ backend, members, onChanged }: { backend: InboxBackend; members: Member[]; onChanged: () => void }) {
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [form, setForm] = useState({ email: '', name: '', role: 'manager' as 'director' | 'manager', password: '' });
+  const [form, setForm] = useState({ email: '', name: '', role: 'manager' as 'director' | 'manager' });
   const [adding, setAdding] = useState(false);
+  /** The most recent one-time link, shown once with a copy button. It is never stored. */
+  const [issued, setIssued] = useState<{ who: string; link: string } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   async function run(key: string, fn: () => Promise<{ ok: true } | { ok: false; error: string }>) {
     setBusy(key); setError(null);
@@ -131,18 +134,43 @@ function MembersSection({ backend, members, onChanged }: { backend: InboxBackend
 
   async function add(e: React.FormEvent) {
     e.preventDefault();
-    setAdding(true); setError(null);
-    const r = await backend.addMember({ email: form.email.trim(), name: form.name.trim(), role: form.role, password: form.password });
+    setAdding(true); setError(null); setIssued(null); setCopied(false);
+    const r = await backend.addMember({ email: form.email.trim(), name: form.name.trim(), role: form.role });
     setAdding(false);
     if (!r.ok) { setError(r.error); return; }
-    setForm({ email: '', name: '', role: 'manager', password: '' });
+    setIssued({ who: form.name.trim() || form.email.trim(), link: r.link });
+    setForm({ email: '', name: '', role: 'manager' });
     onChanged();
+  }
+
+  async function newLink(m: Member) {
+    setBusy(m.user_id); setError(null); setIssued(null); setCopied(false);
+    const r = await backend.memberLink(m.user_id);
+    setBusy(null);
+    if (!r.ok) { setError(r.error); return; }
+    setIssued({ who: memberName(m), link: r.link });
+  }
+
+  async function copy() {
+    if (!issued) return;
+    try { await navigator.clipboard.writeText(issued.link); setCopied(true); } catch { setError('Не удалось скопировать. Выделите ссылку и скопируйте вручную.'); }
   }
 
   return (
     <section className="space-y-3">
       <h2 className="text-base font-bold">Команда</h2>
       {error && <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>}
+      {issued && (
+        <div className="space-y-2 rounded-lg border border-emerald-200 bg-emerald-50 p-4 text-sm">
+          <p className="font-semibold text-emerald-900">Ссылка для {issued.who}</p>
+          <p className="text-emerald-900/80">Отправьте её сотруднику. По ссылке он сам задаст пароль и войдёт. Ссылка одноразовая и действует ограниченное время; в приложении она не сохраняется.</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <input readOnly value={issued.link} onFocus={(e) => e.currentTarget.select()} aria-label="Одноразовая ссылка" className="h-9 min-w-0 flex-1 rounded-md border bg-white px-2 text-xs" />
+            <Button size="sm" onClick={copy}><Copy />{copied ? 'Скопировано' : 'Копировать'}</Button>
+            <Button size="sm" variant="ghost" onClick={() => setIssued(null)}>Скрыть</Button>
+          </div>
+        </div>
+      )}
       <ul className="divide-y rounded-lg border bg-card">
         {members.map((m) => (
           <li key={m.user_id} className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2.5 text-sm">
@@ -162,6 +190,9 @@ function MembersSection({ backend, members, onChanged }: { backend: InboxBackend
                   <option value="manager">{ROLE_LABEL.manager}</option>
                   <option value="director">{ROLE_LABEL.director}</option>
                 </select>
+                <Button variant="outline" size="sm" disabled={busy === m.user_id} onClick={() => void newLink(m)} title="Новая одноразовая ссылка для входа или смены пароля">
+                  <Link2 />Ссылка для входа
+                </Button>
                 <Button variant="outline" size="sm" disabled={busy === m.user_id}
                   onClick={() => void run(m.user_id, () => backend.updateMember(m.user_id, { active: !m.active }))}>
                   {m.active ? 'Отключить' : 'Включить'}
@@ -178,16 +209,15 @@ function MembersSection({ backend, members, onChanged }: { backend: InboxBackend
 
       <form onSubmit={add} className="space-y-3 rounded-lg border bg-card p-4">
         <h3 className="flex items-center gap-2 text-sm font-semibold"><UserPlus className="size-4" />Добавить сотрудника</h3>
-        <div className="grid gap-2 sm:grid-cols-2">
+        <div className="grid gap-2 sm:grid-cols-3">
           <Input type="email" required placeholder="Email для входа" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} autoComplete="off" />
           <Input placeholder="Имя" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
           <select aria-label="Роль" value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value as 'director' | 'manager' })} className="h-10 rounded-md border bg-card px-3 text-sm">
             <option value="manager">{ROLE_LABEL.manager}</option>
             <option value="director">{ROLE_LABEL.director}</option>
           </select>
-          <Input type="password" required minLength={8} placeholder="Временный пароль (от 8 символов)" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} autoComplete="new-password" />
         </div>
-        <p className="text-xs text-muted-foreground">Передайте сотруднику email и временный пароль лично. Он сможет сменить пароль в разделе «Команда» после входа.</p>
+        <p className="text-xs text-muted-foreground">Пароль вводить не нужно: после добавления вы получите одноразовую ссылку, по которой сотрудник сам задаст пароль.</p>
         <Button type="submit" disabled={adding}>{adding ? <Loader2 className="animate-spin" /> : <UserPlus />}Добавить</Button>
       </form>
     </section>

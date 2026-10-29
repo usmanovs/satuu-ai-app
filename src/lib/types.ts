@@ -17,6 +17,8 @@ export interface TeamStats {
   summary: { total: number; ai_active: number; human_requested: number; human_handling: number; unassigned: number; hot_open: number; won: number; lost: number };
 }
 export type SimpleResult = { ok: true } | { ok: false; error: string };
+/** A one-time link the owner passes to a teammate; the teammate sets their own password through it. */
+export type LinkResult = { ok: true; link: string } | { ok: false; error: string };
 
 export interface Conversation {
   id: string;
@@ -105,7 +107,8 @@ export interface InboxBackend {
   listTeam(): Promise<Member[]>;
   teamStats(days: number): Promise<TeamStats>;
   assign(conversationId: string, userId: string | null): Promise<SimpleResult>;
-  addMember(input: { email: string; name: string; role: 'director' | 'manager'; password: string }): Promise<SimpleResult>;
+  addMember(input: { email: string; name: string; role: 'director' | 'manager' }): Promise<LinkResult>;
+  memberLink(userId: string): Promise<LinkResult>;
   updateMember(userId: string, patch: { role?: 'director' | 'manager'; name?: string; active?: boolean }): Promise<SimpleResult>;
   removeMember(userId: string): Promise<SimpleResult>;
   sendReply(input: SendInput): Promise<SendResult>;

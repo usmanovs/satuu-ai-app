@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
-  ActionResult, ChangeEvent, Conversation, InboxBackend, IntegrationStatus, Me, Member, Message, Outcome, OutcomeResult, SendInput, SendResult, SimpleResult, StateAction, TeamStats,
+  ActionResult, ChangeEvent, Conversation, InboxBackend, IntegrationStatus, LinkResult, Me, Member, Message, Outcome, OutcomeResult, SendInput, SendResult, SimpleResult, StateAction, TeamStats,
 } from './types';
 
 interface FnResponse { status: number; json: any }
@@ -28,6 +28,16 @@ export function createLiveBackend(supabase: SupabaseClient, functionsBaseUrl: st
     try {
       const r = await callFn(path, body);
       if (r.status === 200) return { ok: true };
+      return { ok: false, error: r.json?.error?.message ?? `Ошибка сервера (${r.status})` };
+    } catch {
+      return { ok: false, error: 'Нет связи с сервером. Действие не подтверждено.' };
+    }
+  }
+
+  async function link(path: string, body: unknown): Promise<LinkResult> {
+    try {
+      const r = await callFn(path, body);
+      if (r.status === 200 && typeof r.json?.link === 'string') return { ok: true, link: r.json.link };
       return { ok: false, error: r.json?.error?.message ?? `Ошибка сервера (${r.status})` };
     } catch {
       return { ok: false, error: 'Нет связи с сервером. Действие не подтверждено.' };
@@ -113,7 +123,8 @@ export function createLiveBackend(supabase: SupabaseClient, functionsBaseUrl: st
     },
 
     assign: (conversationId, userId) => simple('inbox/assign', { conversation_id: conversationId, assigned_to: userId }),
-    addMember: (input) => simple('inbox/team-add', input),
+    addMember: (input) => link('inbox/team-add', input),
+    memberLink: (userId) => link('inbox/team-link', { user_id: userId }),
     updateMember: (userId, patch) => simple('inbox/team-update', { user_id: userId, ...patch }),
     removeMember: (userId) => simple('inbox/team-remove', { user_id: userId }),
 

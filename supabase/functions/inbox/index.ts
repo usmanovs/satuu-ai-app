@@ -1,7 +1,7 @@
 // Dashboard backend. Auth: the manager's Supabase JWT. Business and manager identity are
 // derived from it; any business_id / user_id in the body is ignored.
 // Routes: GET /me, GET /team, GET|POST /status, POST /conversation-action, /conversation-outcome, /assign,
-// /send-reply, /team-stats, /team-add, /team-update, /team-remove. Roles: owner | director | manager.
+// /send-reply, /team-stats, /team-add, /team-link, /team-update, /team-remove. Roles: owner | director | manager.
 import {
   admin, errorResponse, HttpError, json, preflight, readJson, requireManager, rpc,
 } from '../_shared/lib.ts';
@@ -9,6 +9,13 @@ import { classifyN8nResponse, optStr, reqStr } from '../_shared/pure.ts';
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const SEND_TIMEOUT_MS = 10_000;
+
+// Where invite / reset links send people. Only our own dashboard origin is trusted from the request.
+function dashboardUrl(req: Request): string {
+  const fallback = Deno.env.get('DASHBOARD_URL') ?? 'https://satuu-inbox.vercel.app';
+  const origin = req.headers.get('origin') ?? '';
+  return origin === fallback || origin === 'http://localhost:5173' ? origin : fallback;
+}
 
 function config() {
   const url = Deno.env.get('N8N_SEND_WEBHOOK_URL') ?? '';
@@ -79,23 +86,40 @@ Deno.serve(async (req) => {
       const newEmail = reqStr(body, 'email', 200).toLowerCase();
       const newRole = reqStr(body, 'role', 10);
       const name = optStr(body, 'name', 100);
-      const password = reqStr(body, 'password', 72);
       if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(newEmail)) throw new HttpError(422, 'invalid_field', 'Недопустимый email.');
       if (newRole !== 'director' && newRole !== 'manager') throw new HttpError(422, 'invalid_role', 'Роль должна быть director или manager.');
-      if (password.length < 8) throw new HttpError(422, 'weak_password', 'Пароль должен быть не короче 8 символов.');
-      const { data: created, error: cErr } = await admin().auth.admin.createUser({ email: newEmail, password, email_confirm: true });
-      if (cErr || !created.user) {
-        throw new HttpError(409, 'user_exists', 'Не удалось создать пользователя: возможно, этот email уже зарегистрирован.');
+      // No password is ever typed by the owner: the person opens a one-time link and sets their own.
+      const { data: invited, error: iErr } = await admin().auth.admin.generateLink({
+        type: 'invite', email: newEmail, options: { redirectTo: dashboardUrl(req) },
+      });
+      if (iErr || !invited?.user) {
+        throw new HttpError(409, 'user_exists', 'Не удалось создать приглашение: возможно, этот email уже зарегистрирован.');
       }
       try {
         await rpc('team_add_member', {
-          p_business: businessId, p_actor: userId, p_user: created.user.id, p_email: newEmail, p_name: name, p_role: newRole,
+          p_business: businessId, p_actor: userId, p_user: invited.user.id, p_email: newEmail, p_name: name, p_role: newRole,
         });
       } catch (e) {
-        await admin().auth.admin.deleteUser(created.user.id); // never leave an orphan login behind
+        await admin().auth.admin.deleteUser(invited.user.id); // never leave an orphan login behind
         throw e;
       }
-      return json({ user_id: created.user.id, email: newEmail, role: newRole });
+      return json({ user_id: invited.user.id, email: newEmail, role: newRole, link: invited.properties.action_link });
+    }
+
+    if (route === 'team-link') {
+      // New one-time sign-in / password-reset link for an existing teammate. Owner only; never for the owner row.
+      if (role !== 'owner') throw new HttpError(403, 'forbidden', 'Недостаточно прав для этого действия.');
+      const target = reqStr(body, 'user_id', 36);
+      if (!UUID.test(target)) throw new HttpError(422, 'invalid_field', 'Недопустимый user_id.');
+      const { data: m } = await admin().from('business_memberships')
+        .select('email, role').eq('business_id', businessId).eq('user_id', target).maybeSingle();
+      if (!m || !m.email) throw new HttpError(404, 'not_found', 'Сотрудник не найден.');
+      if (m.role === 'owner') throw new HttpError(403, 'forbidden', 'Недостаточно прав для этого действия.');
+      const { data: link, error: lErr } = await admin().auth.admin.generateLink({
+        type: 'recovery', email: m.email as string, options: { redirectTo: dashboardUrl(req) },
+      });
+      if (lErr || !link?.properties) throw new HttpError(502, 'link_failed', 'Не удалось создать ссылку. Попробуйте ещё раз.');
+      return json({ link: link.properties.action_link });
     }
 
     if (route === 'team-update') {
