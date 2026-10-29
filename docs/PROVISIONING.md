@@ -55,3 +55,15 @@ SUPABASE_URL=… SUPABASE_ANON_KEY=… npm run test:integration
 #   3. run supabase/tests/cleanup.sql
 ```
 The «human replies» suite calls the `inbox-selftest` and `mock-n8n` functions (test-only copies of `inbox` with a hard-wired fake webhook, in `supabase/tests/functions/`). They exist only to prove the send logic without a real WhatsApp number. Never deploy them to production.
+
+## Roles (RBAC)
+| Role | Sees | Can do |
+|---|---|---|
+| `owner` | all chats | everything, plus add / disable / remove directors and managers (Team page) |
+| `director` | all chats | reply, take over, return to AI, assign and reassign, see every manager's performance. Cannot manage the team |
+| `manager` | only chats assigned to them | reply, take over, return to AI in their own chats, see their own performance |
+
+- Permissions are enforced in Postgres (row-level security for reads, permission checks inside every write function), not only in the UI.
+- When a customer asks for a person, the chat is auto-assigned to the active manager with the fewest open human chats; a chat that already has a manager keeps them. With no manager yet, only owner/director see it.
+- The owner adds teammates on the dashboard's **Команда** page (email, role, temporary password). Each person belongs to exactly one business.
+- Verify permissions any time with `supabase/tests/rbac.sql` (rolls back everything it creates).
