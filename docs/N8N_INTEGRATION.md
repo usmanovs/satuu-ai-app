@@ -228,3 +228,13 @@ Effects (SQL `ingest_manager_echo`, verified in a rolled-back transaction): reco
 - Edited/deleted app messages arrive as separate events and are not handled.
 - Voice/video calls are listed by Meta among features unsupported for coexistence numbers; calling inside the app on such a number must be confirmed with Meta.
 - Not tested with a real echo event.
+
+### Echo receiver workflow (built 2026-10-29, INACTIVE)
+n8n's WhatsApp Trigger node can only subscribe to a fixed list of event types and `smb_message_echoes` is not on it, so echoes cannot reach Stage A through that trigger. Workflow **Satuu WhatsApp Echo Receiver** (n8n id `WIicTV9qijCrDPtt`, inactive) is a plain webhook receiver meant for a Meta **webhook override** (per WABA or per phone number):
+- `GET` handshake: answers Meta's `hub.challenge` only when `hub.verify_token` equals n8n variable `SATUU_ECHO_VERIFY_TOKEN`; otherwise 403.
+- `POST`: verifies `X-Hub-Signature-256` (HMAC-SHA256 of the raw body with the Meta app secret, n8n variable `SATUU_META_APP_SECRET`) **before** doing anything; invalid or missing signature → 401. Valid → 200, then one `POST /n8n/ingest-echo` per echoed message.
+- Production URL: shown on the webhook node in n8n (path starts `satuu-wa-echo-`). Treat it as semi-secret.
+
+Tested in n8n manual runs only: a forged echo (bad signature, no secret configured) is rejected with 401 and nothing is recorded (the Code node's `require('crypto')` works on this n8n); a handshake with the wrong token gets 403. **Not tested:** a correctly signed request, the real raw-body handling, the successful handshake (variables do not exist yet), and any real Meta delivery.
+
+To use it: create variables `SATUU_ECHO_VERIFY_TOKEN` (any long random string, also entered in Meta) and `SATUU_META_APP_SECRET` (Meta app dashboard → App settings → Basic; a secret, enter it yourself), activate the workflow, and configure the override in Meta pointing at the production URL.
