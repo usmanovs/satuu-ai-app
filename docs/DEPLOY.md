@@ -46,3 +46,14 @@ Users cannot make themselves members: `business_memberships` has no INSERT polic
 2. Provision the owner and the integration key (§3). Until then nobody can log in to the dashboard.
 3. Optional now: set Edge Function secrets (`supabase secrets set …`; see `supabase/.env.functions.example`). Until `N8N_SEND_WEBHOOK_URL` and `N8N_SEND_WEBHOOK_SECRET` exist the composer shows «Не подключено».
 4. Build the n8n changes in `docs/N8N_INTEGRATION.md` on a **copy** of the workflow, then run the end-to-end checklist in `docs/HANDOFF.md` §7.
+
+## Redeploying the dashboard (lesson learned 2026-10-29)
+The Vercel project has no stored env vars, so a plain `vercel deploy --prod` builds a dashboard that shows "Supabase не настроен". Always pass the two public build settings:
+
+```bash
+npx vercel deploy --prod --yes \
+  --build-env VITE_SUPABASE_URL=https://mejaptdkcwxwcetxfdtr.supabase.co \
+  --build-env VITE_SUPABASE_ANON_KEY=<public anon key from Supabase → Project settings → API>
+```
+
+After a `vercel rollback`, new deployments are not promoted automatically: run `npx vercel promote <deployment-url>`. Commits must use the account email as git author, otherwise Vercel marks the deployment Blocked.
