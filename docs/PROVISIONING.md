@@ -1,0 +1,57 @@
+# Provisioning (owner account, keys, secrets, deploy)
+
+There is **no sign-up and no invitation flow**. The owner account is created by a person with access to the Supabase project, and linked to the business by a SQL script that runs with the database owner's privileges. The browser can never write `business_memberships`: the table has no INSERT/UPDATE/DELETE policy and `authenticated` has only `SELECT` on it.
+
+## 1. Create the Supabase project and apply migrations
+```bash
+npm i -g supabase            # or: brew install supabase/tap/supabase
+supabase login
+supabase link --project-ref <project-ref>
+supabase db push             # applies supabase/migrations/*
+```
+(Or paste the three files from `supabase/migrations/` into the SQL editor in order.)
+
+## 2. Create the manager login
+1. Dashboard → **Authentication → Users → Add user**: email + password, tick *Auto Confirm User*.
+2. Dashboard → **Authentication → Sign In / Providers**: turn **off** *Allow new users to sign up*.
+3. Recommended: enable leaked-password protection (Authentication → Policies; plan-dependent).
+
+## 3. Create the business and link the owner
+Edit the email and business name in `supabase/provisioning/provision_owner.sql`, run it in the SQL editor. It prints the `business_id` and refuses to run twice for the same user.
+
+## 4. Create the n8n key
+Run `supabase/provisioning/create_integration_key.sql`. Copy the key (shown once) into an n8n Header Auth credential. Rotate by creating a new one and setting `revoked_at` on the old row.
+
+## 5. Set Edge Function secrets
+`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are injected automatically. The service-role key never goes into the web app or any `VITE_` variable.
+```bash
+cp supabase/.env.functions.example supabase/.env.functions   # fill in real values; the file is git-ignored
+supabase secrets set --env-file supabase/.env.functions
+```
+Until `N8N_SEND_WEBHOOK_URL` / `N8N_SEND_WEBHOOK_SECRET` are set, the composer shows «Не подключено» and the function answers `503 not_connected` without creating any message. Until `WA_TEMPLATE_NAME` is set, outside-window replies are disabled the same way.
+
+## 6. Deploy the functions
+```bash
+supabase functions deploy n8n   --no-verify-jwt   # authenticated with the integration key
+supabase functions deploy inbox                    # JWT required (and re-verified in code)
+```
+
+## 7. Run the web app
+```bash
+cp .env.example .env.local     # set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (publishable/anon key only)
+npm install
+npm run dev                    # live mode
+npm run dev:demo               # fictional data, no Supabase, can never send
+npm run build                  # static files in dist/
+```
+
+## Tests
+```bash
+npm test                       # unit tests (no network)
+# integration tests need a THROWAWAY project: never run fixtures.sql in production
+#   1. run supabase/tests/fixtures.sql in the test project
+#   2. deploy supabase/tests/functions/mock-n8n and inbox-selftest to that project (and create the test_mock_calls table noted in mock-n8n/index.ts)
+SUPABASE_URL=… SUPABASE_ANON_KEY=… npm run test:integration
+#   3. run supabase/tests/cleanup.sql
+```
+The «human replies» suite calls the `inbox-selftest` and `mock-n8n` functions (test-only copies of `inbox` with a hard-wired fake webhook, in `supabase/tests/functions/`). They exist only to prove the send logic without a real WhatsApp number. Never deploy them to production.

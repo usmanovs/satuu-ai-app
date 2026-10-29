@@ -1,0 +1,114 @@
+import { Search } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
+import { displayName, formatListTime, isUnread, STATE_LABEL } from '@/lib/format';
+import type { Conversation, ConvState } from '@/lib/types';
+
+export type Filter = 'all' | ConvState;
+
+const FILTERS: { id: Filter; label: string }[] = [
+  { id: 'all', label: 'Все' },
+  { id: 'ai_active', label: 'AI активен' },
+  { id: 'human_requested', label: 'Нужен человек' },
+  { id: 'human_handling', label: 'У менеджера' },
+];
+
+export const stateTone = { ai_active: 'emerald', human_requested: 'amber', human_handling: 'blue' } as const;
+
+function initials(name: string) {
+  const parts = name.replace(/^\+/, '').trim().split(/\s+/);
+  return (parts[0]?.[0] ?? '?').toUpperCase() + (parts[1]?.[0]?.toUpperCase() ?? '');
+}
+
+interface Props {
+  conversations: Conversation[] | null;
+  loadError: string | null;
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+  filter: Filter;
+  onFilter: (f: Filter) => void;
+  query: string;
+  onQuery: (q: string) => void;
+  now: number;
+}
+
+export function ConversationList({ conversations, loadError, selectedId, onSelect, filter, onFilter, query, onQuery, now }: Props) {
+  const all = conversations ?? [];
+  const q = query.trim().toLowerCase();
+  const visible = all.filter((c) => {
+    if (filter !== 'all' && c.state !== filter) return false;
+    if (!q) return true;
+    return (
+      displayName(c).toLowerCase().includes(q) ||
+      c.contacts.wa_id.includes(q.replace(/^\+/, '')) ||
+      (c.last_message_preview ?? '').toLowerCase().includes(q)
+    );
+  });
+  const count = (f: Filter) => (f === 'all' ? all.length : all.filter((c) => c.state === f).length);
+
+  return (
+    <div className="flex h-full min-h-0 flex-col border-r bg-card">
+      <div className="space-y-3 border-b p-3">
+        <div className="relative">
+          <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input value={query} onChange={(e) => onQuery(e.target.value)} placeholder="Поиск по имени, номеру, тексту" className="pl-9" aria-label="Поиск" />
+        </div>
+        <div className="flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist" aria-label="Фильтр по статусу">
+          {FILTERS.map((f) => (
+            <button
+              key={f.id}
+              role="tab"
+              aria-selected={filter === f.id}
+              onClick={() => onFilter(f.id)}
+              className={cn(
+                'shrink-0 rounded-full border px-3 py-1 text-[13px] font-medium transition-colors',
+                filter === f.id ? 'border-primary bg-primary text-primary-foreground' : 'bg-card hover:bg-muted',
+              )}
+            >
+              {f.label} <span className={cn('ml-0.5 text-[11px]', filter === f.id ? 'opacity-80' : 'text-muted-foreground')}>{count(f.id)}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="scroll-thin min-h-0 flex-1 overflow-y-auto">
+        {loadError && <div className="m-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">Не удалось загрузить диалоги: {loadError}</div>}
+        {conversations === null && !loadError && <div className="p-6 text-center text-sm text-muted-foreground">Загрузка…</div>}
+        {conversations !== null && visible.length === 0 && (
+          <div className="p-8 text-center text-sm text-muted-foreground">
+            {all.length === 0 ? 'Диалогов пока нет. Они появятся, когда n8n начнёт передавать входящие сообщения.' : 'Ничего не найдено.'}
+          </div>
+        )}
+        <ul>
+          {visible.map((c) => {
+            const unread = isUnread(c);
+            const name = displayName(c);
+            return (
+              <li key={c.id}>
+                <button
+                  onClick={() => onSelect(c.id)}
+                  aria-current={selectedId === c.id}
+                  className={cn('flex w-full items-start gap-3 border-b px-3 py-3 text-left transition-colors hover:bg-muted/70', selectedId === c.id && 'bg-accent hover:bg-accent')}
+                >
+                  <span className="mt-0.5 grid size-10 shrink-0 place-items-center rounded-full bg-muted text-sm font-semibold text-muted-foreground">{initials(name)}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="flex items-baseline justify-between gap-2">
+                      <span className={cn('truncate text-[15px]', unread ? 'font-bold' : 'font-medium')}>{name}</span>
+                      <span className={cn('shrink-0 text-xs', unread ? 'font-semibold text-primary' : 'text-muted-foreground')}>{formatListTime(c.last_message_at, now)}</span>
+                    </span>
+                    <span className="mt-0.5 flex items-center gap-2">
+                      <span className={cn('truncate text-[13px]', unread ? 'text-foreground' : 'text-muted-foreground')}>{c.last_message_preview ?? '—'}</span>
+                      {unread && <span className="ml-auto size-2.5 shrink-0 rounded-full bg-primary" aria-label="Непрочитано" />}
+                    </span>
+                    <span className="mt-1.5 block"><Badge tone={stateTone[c.state]}>{STATE_LABEL[c.state]}</Badge></span>
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </div>
+  );
+}
