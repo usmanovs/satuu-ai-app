@@ -40,6 +40,8 @@ export function TeamPanel({ backend, me, members, onMembersChanged, onChangePass
   return (
     <div className="scroll-thin h-full min-h-0 overflow-y-auto bg-background px-4 py-5 sm:px-8">
       <div className="mx-auto max-w-4xl space-y-8">
+        {me.role !== 'manager' && <OrgChart members={members} stats={stats} />}
+
         <section className="space-y-3">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-base font-bold">{sees}</h2>
@@ -212,6 +214,69 @@ function PasswordSection({ onChangePassword }: { onChangePassword: (password: st
         {state.kind === 'ok' && <span className="text-sm text-emerald-700">Пароль изменён.</span>}
         {state.kind === 'error' && <span className="text-sm text-red-700">{state.text}</span>}
       </form>
+    </section>
+  );
+}
+
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/);
+  return ((parts[0]?.[0] ?? '?') + (parts[1]?.[0] ?? '')).toUpperCase();
+}
+
+function OrgNode({ m, open }: { m: Member; open: number | null }) {
+  const tone = m.role === 'owner' ? 'bg-emerald-100 text-emerald-800' : m.role === 'director' ? 'bg-blue-100 text-blue-800' : 'bg-muted text-muted-foreground';
+  return (
+    <div className={`flex w-44 items-center gap-2 rounded-lg border bg-card px-2.5 py-2 text-left shadow-sm ${m.active ? '' : 'opacity-50'}`}>
+      <span className={`grid size-9 shrink-0 place-items-center rounded-full text-xs font-bold ${tone}`}>{initials(memberName(m))}</span>
+      <span className="min-w-0">
+        <span className="block truncate text-[13px] font-semibold">{memberName(m)}</span>
+        <span className="block truncate text-[11px] text-muted-foreground">
+          {ROLE_LABEL[m.role]}{!m.active ? ' · отключён' : open !== null ? ` · в работе: ${open}` : ''}
+        </span>
+      </span>
+    </div>
+  );
+}
+
+/** A tree level: each node gets a stub up to the bus line; the bus spans first-to-last node. */
+function OrgLevel({ children }: { children: React.ReactNode[] }) {
+  return (
+    <div className="flex justify-center">
+      {children.map((c, i) => (
+        <div
+          key={i}
+          className="relative px-1.5 pt-5 before:absolute before:left-1/2 before:top-0 before:h-5 before:w-px before:bg-border after:absolute after:left-0 after:right-0 after:top-0 after:h-px after:bg-border first:after:left-1/2 last:after:right-1/2 only:after:hidden"
+        >
+          {c}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function OrgChart({ members, stats }: { members: Member[]; stats: TeamStats | null }) {
+  const owners = members.filter((m) => m.role === 'owner');
+  const directors = members.filter((m) => m.role === 'director');
+  const managers = members.filter((m) => m.role === 'manager');
+  const open = (id: string) => stats?.managers.find((s) => s.user_id === id)?.open_now ?? null;
+
+  return (
+    <section className="space-y-3">
+      <h2 className="text-base font-bold">Структура команды</h2>
+      <div className="overflow-x-auto rounded-lg border bg-card p-4">
+        <div className="mx-auto flex w-max min-w-full flex-col items-center">
+          <div className="flex gap-3">{owners.map((m) => <OrgNode key={m.user_id} m={m} open={null} />)}</div>
+          {directors.length > 0 && (
+            <OrgLevel>{directors.map((m) => <OrgNode key={m.user_id} m={m} open={null} />)}</OrgLevel>
+          )}
+          {managers.length > 0 ? (
+            <OrgLevel>{managers.map((m) => <OrgNode key={m.user_id} m={m} open={open(m.user_id)} />)}</OrgLevel>
+          ) : (
+            <p className="mt-4 text-xs text-muted-foreground">Менеджеров пока нет. Добавьте их ниже в разделе «Команда».</p>
+          )}
+        </div>
+        <p className="mt-3 text-center text-[11px] text-muted-foreground">Владелец → директора по продажам → менеджеры по продажам. «В работе» — открытые диалоги, где нужен человек.</p>
+      </div>
     </section>
   );
 }
