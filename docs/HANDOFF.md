@@ -7,13 +7,14 @@ Prepared 2026-10-29 from the repository and the deployed Supabase **test** proje
 ## 0. Bottom line
 - The Supabase side (schema, RLS, SQL functions, two Edge Functions) is IMPLEMENTED, DEPLOYED to a throwaway test project, and TESTED over real HTTP with real Auth/Postgres.
 - **Nothing in n8n has been changed, and nothing has been tested against n8n or the WhatsApp Cloud API.** The integration is **not live**.
-- There is **no deployed dashboard, no GitHub repository, no hosting configured.** The code is a local git repo (1 commit, no remote).
+- There is **no deployed dashboard, no GitHub repository, no hosting configured** (no GitHub/hosting access was available; see `docs/DEPLOY.md`). The code is a local git repo with no remote.
+- Update (later the same day): added the `claim-human-send` endpoint (database-enforced idempotency for n8n), bound `request-human` to the triggering message (no customer id parameter), and documented batch handling; migration 4 applied and `n8n` function v2 deployed; integration tests now 30/30, unit tests 21/21.
 - The test project is currently **empty** of data (test fixtures were removed). A real owner, business and integration key do not exist yet.
 
 ## 1. Project access
 | Item | State |
 |---|---|
-| Dashboard URL | **MISSING** — not deployed. Run locally (`npm run dev`) or build static files (`npm run build` → `dist/`). |
+| Dashboard URL | **MISSING** — not deployed. It would use Supabase project `mejaptdkcwxwcetxfdtr` ("Satuu AI"). Run locally (`npm run dev`) or deploy `dist/` (`docs/DEPLOY.md`). |
 | GitHub repo | **MISSING** — local repo only: `/Users/seyitbek/Sales Super Bot`, branch `main`, commit `40b86a2`. Push to a remote or share the folder. |
 | Hosting | **MISSING** — none chosen. The app is a static Vite build (any static host) plus Supabase for backend. |
 | Stack | React 19 + TypeScript + Vite + Tailwind v4 + shadcn/ui-style components; Supabase Auth, Postgres, Realtime, Edge Functions (Deno). |
@@ -97,7 +98,11 @@ Duplicate `provider_message_id` → `200` with `"duplicate": true`, no new row. 
 `status` ∈ `sent|delivered|read|failed` (`failed` accepts `error_code`, `error_message`). → `200 {"matched":true,"applied":true}`; if the message isn't recorded yet → `202 {"matched":false,"buffered":true}` (applied later). Statuses only move forward; never creates a chat message.
 
 ### 3.5 Explicit "customer wants a human" — `POST /n8n/request-human`
-`{ "business_id": "…", "sender_id": "996700123456", "reason": "…" }` → `{ "changed": true, "state": "human_requested", "state_version": 2 }`. Only `ai_active → human_requested`.
+`{ "business_id": "…", "trigger_message_id": "wamid.XXXX", "reason": "…" }` → `{ "changed": true, "conversation_id": "…", "state": "human_requested", "state_version": 2 }`.
+**No customer id parameter:** the conversation is derived from `trigger_message_id`, which must be an inbound customer message of this business ingested in the last 15 minutes (`404 unknown_trigger`, `409 stale_trigger`). A `sender_id` in the body is ignored. Only `ai_active → human_requested`. The AI agent must not fill in any identifier: call this from a deterministic node using the trigger item's own message id (see `docs/N8N_INTEGRATION.md`). TESTED live: a smuggled other-customer `sender_id` leaves that customer untouched; unknown, outbound and other-business ids are refused.
+
+### 3.5b Claim a human send — `POST /n8n/claim-human-send` (n8n-side idempotency)
+`{ "business_id": "…", "idempotency_key": "<uuid>" }` → first call `{ "claimed": true, "to": "996700123456", "type": "text", "text": "…", "template_name": null }`; later calls `{ "claimed": false, "reason": "already_claimed" }` (also `not_pending`, `not_human_handling`). One row-locked UPDATE in Postgres: 6 parallel claims → exactly 1 winner (TESTED live). n8n must send the recipient/text returned by the claim, not the webhook body. Source: `supabase/functions/n8n/index.ts`, SQL `claim_human_send` in `…000004_…sql`.
 
 ### 3.6 Manager takeover / resume — dashboard only, NOT an n8n endpoint
 `POST /inbox/conversation-action`, header `Authorization: Bearer <manager JWT>` (+ `apikey: <anon key>`), body `{ "conversation_id": "<uuid>", "action": "takeover" | "resume" | "mark_read" }` → `{ "changed": true, "conversation_id": "…", "state": "human_handling", "state_version": 2, "state_updated_at": "…" }`. Source: `supabase/functions/inbox/index.ts` → SQL `set_conversation_state`. n8n observes the result through §3.2. n8n must **not** call this.
@@ -105,7 +110,7 @@ Duplicate `provider_message_id` → `200` with `"duplicate": true`, no new row. 
 ### 3.7 Human reply from the same WhatsApp number
 Two halves:
 1. **Dashboard → Supabase** (IMPLEMENTED, DEPLOYED, TESTED against a mock n8n): `POST /inbox/send-reply` (manager JWT), body `{ "conversation_id": "<uuid>", "idempotency_key": "<uuid>", "text": "…", "use_template": false }`. Server checks `human_handling`, the 24 h window, inserts a `pending` message, then calls n8n. Replies: `200 {"ok":true,"status":"accepted","message":{…}}`; `202 {"ok":false,"status":"pending","unconfirmed":true}`; `502 {"ok":false,"status":"failed",…}`; `503 not_connected` / `template_not_configured` (nothing created); `409 not_human_handling`; `422 window_closed`.
-2. **Supabase → n8n webhook** (**MISSING in n8n — must be created**): the function POSTs to `N8N_SEND_WEBHOOK_URL` with `Authorization: Bearer <SEND_WEBHOOK_SECRET>` and `Idempotency-Key: <uuid>`:
+2. **Supabase → n8n webhook** (**MISSING in n8n — must be created**; it must authenticate and validate before acknowledging, then `claim-human-send` before sending, see `docs/N8N_INTEGRATION.md` §B and `n8n/code/validate-human-send.cjs`): the function POSTs to `N8N_SEND_WEBHOOK_URL` with `Authorization: Bearer <SEND_WEBHOOK_SECRET>` and `Idempotency-Key: <uuid>`:
 ```json
 { "event": "human_reply", "business_id": "<BUSINESS_ID>", "message_id": "…", "idempotency_key": "<uuid>",
   "to": "996700123456", "type": "text", "text": "Здравствуйте!", "template": null,
@@ -119,7 +124,8 @@ Two halves:
 
 ### Endpoints that still must be created in n8n
 1. **Human-send webhook workflow** (the §3.7 receiver). Nothing else on the Supabase side is missing.
-2. HTTP Request nodes in the main workflow calling §3.1–3.5 (these are *clients* of existing endpoints, not new endpoints).
+2. HTTP Request nodes in the main workflow calling §3.1–3.5b (these are *clients* of existing endpoints, not new endpoints).
+3. A Code node that flattens webhook batches (`n8n/code/flatten-batch.cjs`) so every message and status is processed, not just `messages[0]` / `statuses[0]`.
 
 ## 4. n8n configuration
 | Name | Where | Purpose | Configured? |
@@ -139,15 +145,15 @@ Two halves:
 
 ### Required workflow changes
 Expressions assume the n8n WhatsApp Trigger output (`messages[0].from|id|type|text.body|timestamp`, `contacts[0].profile.name`, `statuses[0].…`). **Unverified — check against one real execution.** Details and settings in `docs/N8N_INTEGRATION.md`.
-1. **WhatsApp Trigger** → IF `statuses` exists → receipt branch (step 8); else message branch.
+1. **WhatsApp Trigger** → Code `flatten-batch.cjs` (one item per message/status, oldest first) → IF `kind=status` → receipt branch (step 8); else message branch. Never read `[0]`.
 2. **Store incoming**: HTTP `ingest-message` (retry-on-fail ON: idempotent; on error stop, never continue to AI).
 3. **Check state**: IF `supported && ai_allowed`; then HTTP `ai-permission` stage `before_generate`; IF `allowed`; keep `state_version`.
-4. **Generate**: existing AI Agent; add an HTTP tool `request_human` → `request-human`.
+4. **Generate**: existing AI Agent with **no** Satuu tools; have it return `needs_human`, then a deterministic IF + HTTP node calls `request-human` with `trigger_message_id` from the trigger item.
 5. **Recheck**: HTTP `ai-permission` stage `before_send` with `expected_state_version`; IF `allowed`; nothing slow between this and step 6.
 6. **Send**: existing WhatsApp send node; **Retry On Fail OFF**.
 7. **Store outgoing**: HTTP `record-outbound` `sender:"ai"`, `provider_message_id` = wamid returned by the send node, `status:"accepted"`.
 8. **Receipts, separately**: IF status ∈ `sent|delivered|read|failed` → HTTP `message-status`. Receipts never go to `ingest-message`.
-9. **New workflow «Human send»**: Webhook (POST, Header Auth, respond immediately `{"accepted":true}`) → IF `type=template` → WhatsApp template / text node (existing credential, retry OFF) → HTTP `record-outbound` `sender:"manager"` (success: `accepted` + wamid; error branch: `failed`).
+9. **New workflow «Human send»**: Webhook (POST, Header Auth, *Respond using Respond-to-Webhook node*) → Code `validate-human-send.cjs` (reject `400/403/422` before anything is acknowledged) → HTTP `claim-human-send` (duplicate → ack `200 duplicate`, never send; `not_human_handling` → `409`) → Respond `200` → WhatsApp template/text node using the **claim's** `to`/`text` (existing credential, retry OFF) → HTTP `record-outbound` `sender:"manager"` (success: `accepted` + wamid; error branch: `failed`).
 10. **Delete** all nodes reading/writing the `wa_customers`/`wa_messages` Data Tables (after cutover, §5).
 
 ## 5. Data migration
@@ -167,7 +173,7 @@ Expressions assume the n8n WhatsApp Trigger output (`messages[0].from|id|type|te
 **Switchover without competing stores** (`docs/MIGRATION_PLAN.md`): build the new workflow as an inactive copy → deactivate old workflow → export both tables → run `supabase/provisioning/import_from_n8n_data_tables.sql` (**untested template**, `ON CONFLICT DO NOTHING`) → activate the new workflow → smoke-test → retire the Data Tables. No dual write, no sync. Rollback = reactivate the old workflow; messages received meanwhile exist only in Supabase.
 
 ## 6. Verification (what was actually run)
-Run: 23 integration tests (`tests/integration.test.mjs`) against the **deployed Supabase test project** over real HTTPS (real Auth login, real PostgREST/RLS, real Edge Functions, real Postgres), all passing; plus 15 unit tests (`npm test`); typecheck and production build clean. The test project data was deleted afterwards, so these are not re-runnable until `supabase/tests/fixtures.sql` is applied again.
+Run: 30 integration tests (23 original + 7 for request-human binding and claim-human-send) (`tests/integration.test.mjs`) against the **deployed Supabase test project** over real HTTPS (real Auth login, real PostgREST/RLS, real Edge Functions, real Postgres), all passing; plus 21 unit tests (`npm test`, including the n8n batch/validation snippets); typecheck and production build clean. The test project data was deleted afterwards, so these are not re-runnable until `supabase/tests/fixtures.sql` is applied again.
 
 | Requirement | Result | Level |
 |---|---|---|

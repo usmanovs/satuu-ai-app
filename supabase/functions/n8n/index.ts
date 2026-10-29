@@ -44,10 +44,23 @@ Deno.serve(async (req) => {
       }
 
       case 'request-human': {
+        // Bound to the inbound message that triggered the AI run. There is deliberately NO
+        // sender_id / customer id parameter: the conversation is derived from that message, so an
+        // AI agent cannot request a human (or change state) for an arbitrary customer.
         const result = await rpc('request_human', {
           p_business: businessId,
-          p_wa_id: reqStr(body, 'sender_id', 64),
-          p_reason: optStr(body, 'reason', 300),
+          p_trigger_provider_message_id: reqStr(body, 'trigger_message_id', 256),
+          p_reason: optStr(body, 'reason', 200),
+        });
+        return json(result);
+      }
+
+      case 'claim-human-send': {
+        // n8n-side idempotency: only the first caller per idempotency key gets claimed:true.
+        // The recipient and text come back from the database; n8n must send exactly those.
+        const result = await rpc('claim_human_send', {
+          p_business: businessId,
+          p_idempotency_key: reqStr(body, 'idempotency_key', 100),
         });
         return json(result);
       }

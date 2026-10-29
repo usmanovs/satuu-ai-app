@@ -166,12 +166,13 @@ describe('takeover / resume and the AI gate', () => {
     const s = wa(9); const r = await ingest(s, uid('wamid.h'), 'Позовите менеджера, пожалуйста');
     assert.equal(r.json.state, 'human_requested'); assert.equal(r.json.ai_allowed, false);
     assert.equal((await perm(s)).json.allowed, false);
-    const ok = await ingest(wa(10), uid('wamid.ok'), 'Нас будет 3 человека, сколько стоит?');
+    const okPid = uid('wamid.ok');
+    const ok = await ingest(wa(10), okPid, 'Нас будет 3 человека, сколько стоит?');
     assert.equal(ok.json.state, 'ai_active', 'false positive on "3 человека"');
-    const rq = await n8n('request-human', { business_id: A, sender_id: wa(10), reason: 'Клиент просит оператора' });
+    const rq = await n8n('request-human', { business_id: A, trigger_message_id: okPid, reason: 'Клиент просит оператора' });
     assert.equal(rq.json.state, 'human_requested');
     await action(tokA, ok.json.conversation_id, 'takeover');
-    const rq2 = await n8n('request-human', { business_id: A, sender_id: wa(10) });
+    const rq2 = await n8n('request-human', { business_id: A, trigger_message_id: okPid });
     assert.equal(rq2.json.state, 'human_handling'); assert.equal(rq2.json.changed, false);
     assert.equal((await perm(wa(10))).json.allowed, false);
   });
@@ -288,5 +289,77 @@ describe('AI replies and receipts', () => {
     await n8n('message-status', { business_id: A, provider_message_id: wamid, status: 'failed', error_code: '131047', error_message: 'Re-engagement message' });
     rows = (await msgs(c)).filter((m) => m.sender_role === 'ai');
     assert.equal(rows[0].status, 'failed'); assert.equal(rows[0].error_code, '131047');
+  });
+});
+
+describe('request-human cannot be pointed at an arbitrary customer', () => {
+  test('the conversation is derived from the triggering message; a smuggled sender_id is ignored', async () => {
+    const mine = uid('wamid.mine');
+    await ingest(wa(30), mine, 'Привет');
+    const victim = await ingest(wa(31), uid('wamid.victim'), 'Привет, сколько стоит?');
+    const r = await n8n('request-human', { business_id: A, trigger_message_id: mine, sender_id: wa(31), reason: 'x' });
+    assert.equal(r.status, 200); assert.equal(r.json.state, 'human_requested');
+    assert.notEqual(r.json.conversation_id, victim.json.conversation_id);
+    assert.equal((await perm(wa(31))).json.state, 'ai_active', 'the other customer must be untouched');
+    assert.equal((await perm(wa(30))).json.state, 'human_requested');
+  });
+  test('unknown ids, AI/outbound message ids and other businesses ids are refused', async () => {
+    const s = wa(32); const pid = uid('wamid.t'); const aiPid = uid('wamid.aiout');
+    await ingest(s, pid, 'Привет');
+    await n8n('record-outbound', { business_id: A, sender: 'ai', sender_id: s, provider_message_id: aiPid, text: 'Здравствуйте', status: 'accepted' });
+    const unknown = await n8n('request-human', { business_id: A, trigger_message_id: 'wamid.does-not-exist' });
+    assert.equal(unknown.status, 404); assert.equal(unknown.json.error.code, 'unknown_trigger');
+    const outbound = await n8n('request-human', { business_id: A, trigger_message_id: aiPid });
+    assert.equal(outbound.status, 404);
+    const bPid = uid('wamid.b');
+    await n8n('ingest-message', { business_id: B, sender_id: s, provider_message_id: bPid, type: 'text', text: 'из B' }, 'test-key-B');
+    const cross = await n8n('request-human', { business_id: A, trigger_message_id: bPid });
+    assert.equal(cross.status, 404, 'a message id from business B is invisible to business A');
+    assert.equal((await perm(s)).json.state, 'ai_active');
+    const noTrigger = await n8n('request-human', { business_id: A, sender_id: s });
+    assert.equal(noTrigger.status, 422, 'sender_id alone is no longer accepted');
+  });
+});
+
+describe('claim-human-send: n8n-side idempotency enforced by the database', () => {
+  async function pendingMessage(n) {
+    const r = await ingest(wa(n), uid('wamid.c'), 'Привет'); const c = r.json.conversation_id;
+    await action(tokA, c, 'takeover');
+    const key = uid('k');
+    const sent = await send(tokA, c, `FAIL5XX сообщение ${n}`, key); // mock n8n answers 500 => stays pending
+    assert.equal(sent.json.status, 'pending');
+    return { c, key, to: wa(n) };
+  }
+  test('first claim wins and returns the canonical recipient and text; later claims get nothing', async () => {
+    const { key, to } = await pendingMessage(40);
+    const a = await n8n('claim-human-send', { business_id: A, idempotency_key: key });
+    assert.equal(a.json.claimed, true); assert.equal(a.json.to, to); assert.match(a.json.text, /FAIL5XX сообщение 40/); assert.equal(a.json.type, 'text');
+    const b = await n8n('claim-human-send', { business_id: A, idempotency_key: key });
+    assert.equal(b.json.claimed, false); assert.equal(b.json.reason, 'already_claimed');
+  });
+  test('concurrent claims (duplicate deliveries) produce exactly one winner', async () => {
+    const { key } = await pendingMessage(41);
+    const results = await Promise.all(Array.from({ length: 6 }, () => n8n('claim-human-send', { business_id: A, idempotency_key: key })));
+    assert.equal(results.filter((r) => r.json.claimed === true).length, 1);
+    assert.equal(results.filter((r) => r.json.claimed === false).length, 5);
+  });
+  test('an already-accepted message cannot be claimed', async () => {
+    const r = await ingest(wa(42), uid('wamid.c'), 'Привет'); await action(tokA, r.json.conversation_id, 'takeover');
+    const key = uid('k'); const ok = await send(tokA, r.json.conversation_id, 'Нормальная отправка', key);
+    assert.equal(ok.json.status, 'accepted');
+    const c = await n8n('claim-human-send', { business_id: A, idempotency_key: key });
+    assert.equal(c.json.claimed, false); assert.equal(c.json.reason, 'not_pending');
+  });
+  test('if the manager returned the chat to the AI before n8n claimed, nothing is sent', async () => {
+    const { c, key } = await pendingMessage(43);
+    await action(tokA, c, 'resume');
+    const r = await n8n('claim-human-send', { business_id: A, idempotency_key: key });
+    assert.equal(r.json.claimed, false); assert.equal(r.json.reason, 'not_human_handling');
+  });
+  test('unknown keys and other businesses keys are 404', async () => {
+    const { key } = await pendingMessage(44);
+    assert.equal((await n8n('claim-human-send', { business_id: A, idempotency_key: uid('nope') })).status, 404);
+    assert.equal((await n8n('claim-human-send', { business_id: B, idempotency_key: key }, 'test-key-B')).status, 404);
+    assert.equal((await n8n('claim-human-send', { business_id: A, idempotency_key: key }, 'wrong')).status, 401);
   });
 });

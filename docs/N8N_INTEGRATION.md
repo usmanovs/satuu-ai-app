@@ -90,11 +90,24 @@ Send `accepted` here, never `delivered`: the Cloud API returning an id only mean
 ```
 Statuses move forward only (`accepted → sent → delivered → read`); a late `sent` never overwrites `delivered`; `failed` never overwrites `delivered`/`read`. If the receipt arrives before the message row exists you get `202 {"matched":false,"buffered":true}` and it is applied when the message is recorded. Receipts never create chat messages.
 
-**Explicit human request** (for the AI agent's tool): `POST /n8n/request-human`
+**Explicit human request:** `POST /n8n/request-human`
 ```json
-{ "business_id": "…", "sender_id": "996700123456", "reason": "Клиент просит оператора" }
+{ "business_id": "…", "trigger_message_id": "wamid.XXXX", "reason": "Клиент просит оператора" }
 ```
-Only `ai_active → human_requested`; it never downgrades `human_handling`.
+→ `{ "changed": true, "conversation_id": "…", "state": "human_requested", "state_version": 2 }`
+
+There is **no customer id parameter**. The conversation is derived from `trigger_message_id`, which must be an inbound **customer** message of this business that was ingested within the last 15 minutes (`404 unknown_trigger`, `409 stale_trigger` otherwise). A sender_id sent alongside is ignored. Only `ai_active → human_requested`; it never downgrades `human_handling`. The reason is stored as «Запрос человека (AI): …» (200 chars max).
+
+**Who may call what.** The AI agent must never choose `business_id`, `sender_id`, `trigger_message_id` or any other identifier. Every `/n8n/*` call is made by a **deterministic workflow node** whose values come from the trigger item and the `SATUU_BUSINESS_ID` variable. To let the AI ask for a human, have the agent return a structured flag (for example `{"reply":"…","needs_human":true}`) and let an ordinary IF + HTTP node call `request-human` with the trigger's own message id. Do **not** expose `request-human` (or any `/n8n/*` endpoint) as an HTTP Request *tool* whose parameters the model fills in. Server-side, `request-human` is additionally bound to the triggering message so a model that did call it still could not target another customer.
+
+**Claim a human send (n8n-side idempotency):** `POST /n8n/claim-human-send`
+```json
+{ "business_id": "…", "idempotency_key": "6f1c0f3e-0b8e-4a39-9d52-5a2d7f6b9c11" }
+```
+→ first caller: `{ "claimed": true, "message_id": "…", "to": "996700123456", "type": "text", "text": "Здравствуйте!", "template_name": null }`
+→ every later caller: `{ "claimed": false, "reason": "already_claimed", "status": "pending" }`
+Other reasons: `not_pending` (already accepted/failed), `not_human_handling` (the manager returned the chat to the AI before n8n got to it). Unknown key or another business's key: `404`.
+The claim is one row-locked UPDATE in Postgres, so concurrent duplicate deliveries produce exactly one `claimed:true` (verified with 6 parallel calls). **n8n must send exactly the recipient and text returned by the claim, not the webhook body.**
 
 ## 4. Human replies (dashboard → n8n)
 
@@ -134,36 +147,48 @@ Then n8n reports the real outcome with `POST /n8n/record-outbound`:
 ```
 Delivery then arrives through `/message-status`.
 
+## Webhook batches: every message and every status is processed
+
+A WhatsApp delivery is a batch: `entry[] → changes[] → value`, and one `value` can hold several `messages[]` and several `statuses[]` (and `contacts[]` for the names). Reading `messages[0]` / `statuses[0]` drops the rest. Put the Code node [`n8n/code/flatten-batch.cjs`](../n8n/code/flatten-batch.cjs) straight after the WhatsApp Trigger. It emits **one item per message and one per status**, oldest first, with the right display name per sender, dropping non-actionable statuses (`deleted`, `warning`, …). Every later node then runs once per item, so each message/status is ingested, gated, answered and recorded independently. This is unit-tested (`n8n/code/n8n-code.test.ts`) against a mixed batch, but not inside n8n.
+
+Processing rules for the flattened items:
+- Route by `kind`: `status` → `message-status`; `message` → the message branch.
+- Use `{{ $json.sender_id }}`, `{{ $json.provider_message_id }}`, … from **the current item**, never `$('Trigger').first()` or `[0]`. For later nodes in the same branch refer to the same item (`$('Flatten').item`).
+- A failure on one item must not block the others: enable *Continue On Fail* (or an error output) on the ingest node and stop only that item's branch.
+- If two messages from the same customer sit in one batch, both are stored; the AI will run twice. To answer once, add a step that keeps only the newest message per `sender_id` for generation (ingest all, generate for the latest).
+- Because Meta may redeliver a batch, every endpoint used here is idempotent (messages by `provider_message_id`, statuses forward-only, AI replies by `provider_message_id`). Replays are safe.
+
 ## Required n8n changes (checklist)
 
+> Field expressions assume the n8n WhatsApp Trigger's output shape. **Verify them on one real execution.** Nothing below has been run in n8n.
+
 ### A. Main workflow (WhatsApp Trigger → AI Agent → send)
+1. **Flatten the batch** with `flatten-batch.cjs` (see above). Then IF `kind = status` → step 9; else → message branch.
+2. **Ingest.** HTTP `Ingest message` → `POST …/n8n/ingest-message`, credential `Satuu Supabase`, fields from the current item. *Retry On Fail* **on** (idempotent). *On Error*: stop this item's branch (never fall through to the AI).
+3. **Gate 1.** IF `{{ $json.supported && $json.ai_allowed }}`. False → end (optional fixed reply for unsupported media must pass gates 2–3).
+4. **Permission before generating.** HTTP `ai-permission` stage `before_generate`; IF `allowed`; keep `state_version`.
+5. **AI Agent** (existing). Give it **no** Satuu tools. Ask it for structured output including `needs_human`. After the agent: IF `needs_human` → HTTP `request-human` with `trigger_message_id = {{ $('Flatten').item.json.provider_message_id }}` (deterministic node).
+6. **Permission before send.** HTTP `ai-permission` stage `before_send` with `expected_state_version`; IF `allowed`. Nothing slow between this node and the send.
+7. **WhatsApp send** (existing). *Retry On Fail* **off**.
+8. **Record AI reply.** HTTP `record-outbound` `sender: "ai"`, `provider_message_id` = the wamid returned by the send node, `status: "accepted"`. Retry **on**.
+9. **Receipts.** HTTP `message-status` per status item (`provider_message_id`, `status`, `timestamp`, `error_code`, `error_message`). Retry **on**. Receipts never go to `ingest-message`.
+10. **Remove** every node that reads or writes the `wa_customers` / `wa_messages` Data Tables (after cutover, see `MIGRATION_PLAN.md`).
 
-> Field expressions assume the n8n WhatsApp Trigger output (`messages[0].from`, `messages[0].id`, `contacts[0].profile.name`, `statuses[0].…`). Check them against one real execution of your trigger before relying on them.
+### B. New workflow «Human send» (authenticate and validate BEFORE acknowledging; idempotent in n8n)
+1. **Webhook** node: `POST`, unguessable path, *Authentication* = Header Auth (`Satuu send webhook`), *Respond* = **Using 'Respond to Webhook' Node**. An unauthenticated caller is rejected by n8n before the workflow runs. Nothing has been acknowledged yet.
+2. **Code** `Validate` = [`n8n/code/validate-human-send.cjs`](../n8n/code/validate-human-send.cjs) (event, business id equals `SATUU_BUSINESS_ID`, UUID idempotency key equal to the `Idempotency-Key` header, type `text|template`, sane template language). IF `ok = false` → **Respond to Webhook** with the returned status (`400/403/422`) and stop.
+3. **HTTP** `Claim` → `POST …/n8n/claim-human-send` `{ business_id, idempotency_key }`. IF `claimed = false`:
+   - `already_claimed` → **Respond** `200 {"accepted":true,"duplicate":true}` and stop (a duplicate delivery is acknowledged but never sent again);
+   - `not_human_handling` / `not_pending` → **Respond** `409` and stop (the dashboard shows the message as failed);
+   - HTTP 404 → **Respond** `404` and stop.
+4. **Respond to Webhook** `200 {"accepted":true}` (only now, after authentication, validation and a successful claim).
+5. IF claim `type = template` → WhatsApp **send template** (`template_name` from the claim, language from the validated payload), else WhatsApp **send message** with the claim's `text`; recipient = the claim's `to`. Use the **existing WhatsApp credential**. *Retry On Fail* **off** on both. Do not read recipient or text from the webhook body.
+6. Success → HTTP `record-outbound` `{ sender: "manager", idempotency_key, provider_message_id: <wamid>, status: "accepted" }`. Send-node error branch → same endpoint with `status: "failed"`, `error_code`, `error_message`. (Required: the HTTP answer already went out, so this is the only way a failed send becomes visible.)
 
-1. **Split messages from receipts.** After the trigger add an IF: `{{ $json.statuses }}` exists → status branch (step 9); otherwise → message branch.
-2. **Ingest.** HTTP Request `Ingest message` → `POST …/n8n/ingest-message`, credential `Satuu Supabase`, body as in §1 (`sender_id` = `{{ $json.messages[0].from }}`, `provider_message_id` = `{{ $json.messages[0].id }}`, `type` = `{{ $json.messages[0].type }}`, `text` = `{{ $json.messages[0].text?.body }}`, `timestamp` = `{{ $json.messages[0].timestamp }}`, `display_name` = `{{ $json.contacts?.[0]?.profile?.name }}`).
-   Settings: *Retry On Fail* **on** (3 tries) — safe, the endpoint is idempotent. *On Error*: stop the workflow (never fall through to the AI).
-3. **Gate 1.** IF `{{ $json.supported && $json.ai_allowed }}`. False → end (NoOp). Optional: for `supported = false` send a fixed «Пока я понимаю только текстовые сообщения» — it must pass gates 2 and 3 too.
-4. **Permission before generating.** HTTP `AI permission (before generate)` → §2. IF `allowed` else end. Remember `state_version`.
-5. **AI Agent** (existing). Add an HTTP Request **tool** named `request_human` → `/n8n/request-human`, and one line to the system prompt: «Если клиент просит человека/менеджера — вызови request_human и скажи, что передаёшь диалог».
-6. **Permission before send.** HTTP `AI permission (before send)` with `expected_state_version = {{ $('AI permission (before generate)').item.json.state_version }}`. IF `allowed` else end. **Put nothing slow between this node and the send node.**
-7. **WhatsApp send** (existing). Set *Retry On Fail* **off**.
-8. **Record AI reply.** HTTP → `/n8n/record-outbound` with `sender: "ai"`, `provider_message_id = {{ $json.messages[0].id }}` (the send node's response), `status: "accepted"`. Retry On Fail **on** (idempotent).
-9. **Status branch.** IF `statuses[0].status` is one of `sent`, `delivered`, `read`, `failed` (ignore `deleted`, `warning`, …) → HTTP → `/n8n/message-status` with `provider_message_id = {{ $json.statuses[0].id }}`, `status`, `timestamp`, and for `failed`: `error_code = {{ $json.statuses[0].errors?.[0]?.code }}`, `error_message = {{ $json.statuses[0].errors?.[0]?.title }}`.
-10. **Remove** every node that reads or writes the `wa_customers` / `wa_messages` Data Tables (see `MIGRATION_PLAN.md`).
-
-### B. New workflow: «Human send»
-
-1. **Webhook** node: POST, path unguessable, *Authentication* = Header Auth (`Satuu send webhook`), *Respond* = **Immediately**, response body `{"accepted": true}`. The URL goes into `N8N_SEND_WEBHOOK_URL`.
-2. IF `{{ $json.body.type }}` = `template` →
-   - WhatsApp **send template** node (name/language from `body.template`), recipient `{{ $json.body.to }}`; else
-   - WhatsApp **send message** node, text `{{ $json.body.text }}`.
-   Use the **existing WhatsApp credential**, so it sends from the same business number. *Retry On Fail* **off** on both.
-3. Success → HTTP → `/n8n/record-outbound` `{ sender: "manager", idempotency_key: {{ $('Webhook').item.json.body.idempotency_key }}, provider_message_id: <wamid>, status: "accepted" }`.
-4. Error branch of the send node → same endpoint with `status: "failed"` + `error_code` / `error_message`. (Required: the HTTP answer was already sent, so this is the only way a failed send becomes visible.)
+**Delivery guarantee:** at most once. If n8n crashes after the claim but before the WhatsApp call, the message stays `pending` («Нет подтверждения») and is **not** re-sent automatically; the manager decides. Duplicates are prevented by the database claim, not by the dashboard.
 
 ### C. Credentials and secrets
-- n8n: the two Header Auth credentials above.
+- n8n: Header Auth credentials `Satuu Supabase` and `Satuu send webhook`; variables `SATUU_BUSINESS_ID`, `SATUU_FUNCTIONS_URL`.
 - Supabase Edge Function secrets: `N8N_SEND_WEBHOOK_URL`, `N8N_SEND_WEBHOOK_SECRET`, optionally `WA_TEMPLATE_NAME`, `WA_TEMPLATE_LANG`.
 
 ## Known races and limits (read before going live)

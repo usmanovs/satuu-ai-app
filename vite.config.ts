@@ -6,5 +6,5 @@ import path from 'node:path';
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: { alias: { '@': path.resolve(__dirname, 'src') } },
-  test: { include: ['src/**/*.test.ts', 'supabase/functions/_shared/*.test.ts'] },
+  test: { include: ['src/**/*.test.ts', 'supabase/functions/_shared/*.test.ts', 'n8n/code/*.test.ts'] },
 });

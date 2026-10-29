@@ -18,6 +18,8 @@ Stack: React + TypeScript + Tailwind v4 + shadcn/ui-style components, Supabase A
 ## Documents
 - [`docs/PROVISIONING.md`](docs/PROVISIONING.md) — create the owner account, keys, secrets, deploy, run
 - [`docs/N8N_INTEGRATION.md`](docs/N8N_INTEGRATION.md) — contracts with example JSON, the exact n8n workflow changes, known races
+- [`docs/DEPLOY.md`](docs/DEPLOY.md) — which Supabase project, GitHub push, dashboard deploy, remaining steps
+- [`docs/HANDOFF.md`](docs/HANDOFF.md) — technical handoff (implemented / deployed / tested / mocked / missing)
 - [`docs/MIGRATION_PLAN.md`](docs/MIGRATION_PLAN.md) — replacing the n8n Data Tables with Supabase (no dual source of truth)
 
 ## Layout
@@ -32,7 +34,7 @@ tests/                 integration tests (run against a throwaway Supabase proje
 
 ## What works (verified)
 
-Verified against a throwaway Supabase project (`mejaptdkcwxwcetxfdtr`) with 23 passing integration tests, and 15 unit tests; typecheck and production build are clean.
+Verified against a throwaway Supabase project (`mejaptdkcwxwcetxfdtr`) with 30 passing integration tests, and 21 unit tests; typecheck and production build are clean.
 
 | Area | Verified behaviour |
 |---|---|

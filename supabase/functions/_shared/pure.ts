@@ -18,6 +18,8 @@ const DB_ERRORS: Record<string, [number, string]> = {
   invalid_idempotency_key: [422, 'Недопустимый ключ идемпотентности.'],
   unknown_conversation: [404, 'Диалог не найден.'],
   unknown_message: [404, 'Сообщение не найдено.'],
+  unknown_trigger: [404, 'trigger_message_id не найден среди входящих сообщений клиента этого бизнеса.'],
+  stale_trigger: [409, 'trigger_message_id слишком старый (допустимо до 15 минут).'],
   not_found: [404, 'Диалог не найден.'],
   not_human_handling: [409, 'Отправка возможна только в режиме «Диалог у менеджера». Сначала возьмите диалог.'],
   window_closed: [422, 'Окно 24 часа закрыто: свободный текст отправить нельзя, нужен одобренный шаблон.'],
