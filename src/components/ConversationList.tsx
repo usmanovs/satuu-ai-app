@@ -2,8 +2,8 @@ import { ArrowDownWideNarrow, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { displayName, formatListTime, isUnread, STATE_LABEL } from '@/lib/format';
-import type { Conversation, ConvState, LeadLabel } from '@/lib/types';
+import { displayName, formatListTime, isUnread, memberName, STATE_LABEL } from '@/lib/format';
+import type { Conversation, ConvState, LeadLabel, Member } from '@/lib/types';
 
 export type Filter = 'all' | ConvState;
 
@@ -44,13 +44,20 @@ interface Props {
   now: number;
   sortByLead: boolean;
   onSortByLead: (v: boolean) => void;
+  members: Member[];
+  /** owner/director only: filter by the responsible sales manager ('all' | 'none' | user id) */
+  canFilterByAssignee: boolean;
+  assignee: string;
+  onAssignee: (v: string) => void;
 }
 
-export function ConversationList({ conversations, loadError, selectedId, onSelect, filter, onFilter, query, onQuery, now, sortByLead, onSortByLead }: Props) {
+export function ConversationList({ conversations, loadError, selectedId, onSelect, filter, onFilter, query, onQuery, now, sortByLead, onSortByLead, members, canFilterByAssignee, assignee, onAssignee }: Props) {
   const all = conversations ?? [];
   const q = query.trim().toLowerCase();
   const filtered = all.filter((c) => {
     if (filter !== 'all' && c.state !== filter) return false;
+    if (assignee === 'none' && c.assigned_to) return false;
+    if (assignee !== 'all' && assignee !== 'none' && c.assigned_to !== assignee) return false;
     if (!q) return true;
     return (
       displayName(c).toLowerCase().includes(q) ||
@@ -79,6 +86,16 @@ export function ConversationList({ conversations, loadError, selectedId, onSelec
           >
             <ArrowDownWideNarrow className="size-3.5" />По вероятности покупки
           </button>
+          {canFilterByAssignee && (
+            <select
+              value={assignee} onChange={(e) => onAssignee(e.target.value)} aria-label="Фильтр по менеджеру"
+              className="h-7 max-w-[55%] rounded-md border bg-card px-2 text-xs font-medium"
+            >
+              <option value="all">Все менеджеры</option>
+              <option value="none">Не назначены</option>
+              {members.filter((m) => m.role === 'manager').map((m) => <option key={m.user_id} value={m.user_id}>{memberName(m)}{m.active ? '' : ' (отключён)'}</option>)}
+            </select>
+          )}
         </div>
         <div className="flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist" aria-label="Фильтр по статусу">
           {FILTERS.map((f) => (
@@ -127,7 +144,7 @@ export function ConversationList({ conversations, loadError, selectedId, onSelec
                       <span className={cn('truncate text-[13px]', unread ? 'text-foreground' : 'text-muted-foreground')}>{c.last_message_preview ?? '—'}</span>
                       {unread && <span className="ml-auto size-2.5 shrink-0 rounded-full bg-primary" aria-label="Непрочитано" />}
                     </span>
-                    <span className="mt-1.5 flex flex-wrap items-center gap-1.5"><Badge tone={stateTone[c.state]}>{STATE_LABEL[c.state]}</Badge><LeadBadge c={c} /></span>
+                    <span className="mt-1.5 flex flex-wrap items-center gap-1.5"><Badge tone={stateTone[c.state]}>{STATE_LABEL[c.state]}</Badge><LeadBadge c={c} />{canFilterByAssignee && <span className="text-[11px] text-muted-foreground">{c.assigned_to ? `→ ${memberName(members.find((m) => m.user_id === c.assigned_to))}` : 'не назначен'}</span>}</span>
                   </span>
                 </button>
               </li>

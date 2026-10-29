@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { LogOut, MessageSquareText, Radio, Unplug } from 'lucide-react';
+import { LogOut, MessageSquareText, Radio, Unplug, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ChatPanel } from '@/components/ChatPanel';
 import { ConversationList, type Filter } from '@/components/ConversationList';
-import { formatAgo, isUnread } from '@/lib/format';
-import type { Conversation, InboxBackend, IntegrationStatus, Message, Outcome, SendInput, SendResult } from '@/lib/types';
+import { TeamPanel } from '@/components/TeamPanel';
+import { formatAgo, isUnread, memberName, ROLE_LABEL } from '@/lib/format';
+import type { Conversation, InboxBackend, IntegrationStatus, Me, Member, Message, Outcome, SendInput, SendResult } from '@/lib/types';
 
 interface Props {
   backend: InboxBackend;
   businessName?: string;
   onSignOut?: () => void;
+  onChangePassword?: (password: string) => Promise<string | null>;
 }
 
 function useNow(ms: number) {
@@ -21,7 +23,7 @@ function useNow(ms: number) {
 
 const errText = (e: unknown) => (e instanceof Error ? e.message : 'неизвестная ошибка');
 
-export function Inbox({ backend, businessName, onSignOut }: Props) {
+export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Props) {
   const demo = backend.mode === 'demo';
   const now = useNow(15_000);
   const [convs, setConvs] = useState<Conversation[] | null>(null);
@@ -31,6 +33,10 @@ export function Inbox({ backend, businessName, onSignOut }: Props) {
   const [filter, setFilter] = useState<Filter>('all');
   const [query, setQuery] = useState('');
   const [sortByLead, setSortByLead] = useState(false);
+  const [view, setView] = useState<'inbox' | 'team'>('inbox');
+  const [me, setMe] = useState<Me | null>(null);
+  const [members, setMembers] = useState<Member[]>([]);
+  const [assignee, setAssignee] = useState('all');
   const [outcomeBusy, setOutcomeBusy] = useState<string | null>(null);
   const [outcomeError, setOutcomeError] = useState<Record<string, string>>({});
   const [integration, setIntegration] = useState<IntegrationStatus | null>(null);
@@ -51,13 +57,18 @@ export function Inbox({ backend, businessName, onSignOut }: Props) {
     } catch { /* keep what we have; realtime/next refresh will retry */ }
   }, [backend]);
 
+  const refreshMembers = useCallback(async () => {
+    try { setMembers(await backend.listTeam()); } catch { /* names fall back to "Сотрудник" */ }
+  }, [backend]);
+
   const refreshStatus = useCallback(async () => {
     try { setIntegration(await backend.integrationStatus()); } catch { setIntegration(null); }
   }, [backend]);
 
   // initial load + realtime + slow polling as a safety net
   useEffect(() => {
-    void refreshList(); void refreshStatus();
+    void refreshList(); void refreshStatus(); void refreshMembers();
+    backend.me().then(setMe).catch(() => setMe(null));
     let timer: ReturnType<typeof setTimeout> | undefined;
     const unsubscribe = backend.subscribe(
       (e) => {
@@ -71,7 +82,7 @@ export function Inbox({ backend, businessName, onSignOut }: Props) {
     );
     const poll = setInterval(() => { void refreshList(); void refreshStatus(); if (selectedRef.current) void refreshMessages(selectedRef.current); }, 30_000);
     return () => { unsubscribe(); clearInterval(poll); clearTimeout(timer); };
-  }, [backend, refreshList, refreshMessages, refreshStatus]);
+  }, [backend, refreshList, refreshMembers, refreshMessages, refreshStatus]);
 
   const selected = useMemo(() => convs?.find((c) => c.id === selectedId) ?? null, [convs, selectedId]);
 
@@ -95,6 +106,12 @@ export function Inbox({ backend, businessName, onSignOut }: Props) {
     if (!r.ok) setActionError((e) => ({ ...e, [id]: r.error }));
     await refreshList(); // the UI shows only what the server confirms
     if (selectedRef.current === id) await refreshMessages(id);
+  }
+
+  async function assignTo(id: string, userId: string | null): Promise<string | null> {
+    const r = await backend.assign(id, userId);
+    await refreshList(); // the UI shows only what the server confirms
+    return r.ok ? null : r.error;
   }
 
   async function runOutcome(id: string, outcome: Outcome | 'open') {
@@ -139,16 +156,30 @@ export function Inbox({ backend, businessName, onSignOut }: Props) {
               </Badge>
             </>
           )}
+          {me && (
+            <>
+              <Badge tone="neutral" className="hidden md:inline-flex" title={me.email ?? undefined}>{ROLE_LABEL[me.role]} · {memberName(me)}</Badge>
+              <Button variant={view === 'team' ? 'default' : 'outline'} size="sm" onClick={() => setView(view === 'team' ? 'inbox' : 'team')}>
+                <Users />{view === 'team' ? 'К диалогам' : me.role === 'manager' ? 'Моя статистика' : 'Команда'}
+              </Button>
+            </>
+          )}
           {onSignOut && <Button variant="ghost" size="sm" onClick={onSignOut}><LogOut />Выйти</Button>}
         </div>
       </header>
 
+      {view === 'team' && me ? (
+        <main className="min-h-0 flex-1">
+          <TeamPanel backend={backend} me={me} members={members} onMembersChanged={() => { void refreshMembers(); void refreshList(); }} onChangePassword={onChangePassword} />
+        </main>
+      ) : (
       <main className="min-h-0 flex-1 md:grid md:grid-cols-[minmax(320px,380px)_1fr]">
         <div className={`${selectedId ? 'hidden md:block' : 'block'} h-full min-h-0`}>
           <ConversationList
             conversations={convs} loadError={loadError} selectedId={selectedId} onSelect={setSelectedId}
             filter={filter} onFilter={setFilter} query={query} onQuery={setQuery} now={now}
             sortByLead={sortByLead} onSortByLead={setSortByLead}
+            members={members} canFilterByAssignee={me !== null && me.role !== 'manager'} assignee={assignee} onAssignee={setAssignee}
           />
         </div>
         <section className={`${selectedId ? 'block' : 'hidden md:block'} h-full min-h-0`}>
@@ -160,6 +191,7 @@ export function Inbox({ backend, businessName, onSignOut }: Props) {
               onTakeover={() => runAction(selected.id, 'takeover')}
               onResume={() => runAction(selected.id, 'resume')}
               onSend={send}
+              role={me?.role ?? 'manager'} members={members} onAssign={(u) => assignTo(selected.id, u)}
               onOutcome={(o) => runOutcome(selected.id, o)}
               outcomeBusy={outcomeBusy === selected.id} outcomeError={outcomeError[selected.id]}
               onBack={() => setSelectedId(null)}
@@ -171,6 +203,7 @@ export function Inbox({ backend, businessName, onSignOut }: Props) {
           )}
         </section>
       </main>
+      )}
     </div>
   );
 }

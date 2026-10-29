@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
-  ActionResult, ChangeEvent, Conversation, InboxBackend, IntegrationStatus, Message, Outcome, OutcomeResult, SendInput, SendResult, StateAction,
+  ActionResult, ChangeEvent, Conversation, InboxBackend, IntegrationStatus, Me, Member, Message, Outcome, OutcomeResult, SendInput, SendResult, SimpleResult, StateAction, TeamStats,
 } from './types';
 
 interface FnResponse { status: number; json: any }
@@ -22,6 +22,16 @@ export function createLiveBackend(supabase: SupabaseClient, functionsBaseUrl: st
     let json: any = null;
     try { json = await res.json(); } catch { /* empty body */ }
     return { status: res.status, json };
+  }
+
+  async function simple(path: string, body: unknown): Promise<SimpleResult> {
+    try {
+      const r = await callFn(path, body);
+      if (r.status === 200) return { ok: true };
+      return { ok: false, error: r.json?.error?.message ?? `Ошибка сервера (${r.status})` };
+    } catch {
+      return { ok: false, error: 'Нет связи с сервером. Действие не подтверждено.' };
+    }
   }
 
   return {
@@ -83,6 +93,29 @@ export function createLiveBackend(supabase: SupabaseClient, functionsBaseUrl: st
         return { ok: false, error: 'Нет связи с сервером. Результат не сохранён.' };
       }
     },
+
+    async me(): Promise<Me> {
+      const r = await callFn('inbox/me', undefined, 'GET');
+      if (r.status !== 200) throw new Error(r.json?.error?.message ?? 'me unavailable');
+      return r.json as Me;
+    },
+
+    async listTeam(): Promise<Member[]> {
+      const r = await callFn('inbox/team', undefined, 'GET');
+      if (r.status !== 200) throw new Error(r.json?.error?.message ?? 'team unavailable');
+      return (r.json?.members ?? []) as Member[];
+    },
+
+    async teamStats(days: number): Promise<TeamStats> {
+      const r = await callFn('inbox/team-stats', { days });
+      if (r.status !== 200) throw new Error(r.json?.error?.message ?? 'stats unavailable');
+      return r.json as TeamStats;
+    },
+
+    assign: (conversationId, userId) => simple('inbox/assign', { conversation_id: conversationId, assigned_to: userId }),
+    addMember: (input) => simple('inbox/team-add', input),
+    updateMember: (userId, patch) => simple('inbox/team-update', { user_id: userId, ...patch }),
+    removeMember: (userId) => simple('inbox/team-remove', { user_id: userId }),
 
     async sendReply(input: SendInput): Promise<SendResult> {
       let r: FnResponse;

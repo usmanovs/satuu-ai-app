@@ -2,7 +2,7 @@
 // It exists only to show the UI with fictional data and can never send a real message.
 import { inServiceWindow } from './format';
 import type {
-  ActionResult, ChangeEvent, Conversation, ConvState, InboxBackend, IntegrationStatus, Message, Outcome, OutcomeResult, SendInput, SendResult, StateAction,
+  ActionResult, ChangeEvent, Conversation, ConvState, InboxBackend, IntegrationStatus, Me, Member, Message, Outcome, OutcomeResult, SendInput, SendResult, SimpleResult, StateAction, TeamStats,
 } from './types';
 
 const MIN = 60_000, HOUR = 3_600_000;
@@ -14,6 +14,7 @@ function conv(id: string, wa: string, name: string | null, state: ConvState, las
     last_inbound_at: lastInboundAgo === null ? null : ago(lastInboundAgo),
     last_message_at: ago(lastInboundAgo ?? 0), last_message_preview: preview,
     manager_last_read_at: readAgo === null ? null : ago(readAgo),
+    assigned_to: null, assigned_at: null,
     lead_score: null, lead_label: null, lead_reason: null, lead_scored_at: null, outcome: null, outcome_at: null,
     contacts: { wa_id: wa, display_name: name },
   };
@@ -38,6 +39,7 @@ function seed(): { convs: Conversation[]; msgs: Record<string, Message[]> } {
     conv('d4', '996222888999', 'Нурлан (турагентство)', 'ai_active', 30 * HOUR, '[Изображение — ассистент не обрабатывает изображения]', 29 * HOUR),
     conv('d5', '996700999000', 'Динара', 'ai_active', 3 * HOUR, 'Спасибо, всё понятно!', 3 * HOUR - MIN),
   ];
+  convs[0].assigned_to = 'demo-azamat'; convs[1].assigned_to = 'demo-aizada'; convs[2].assigned_to = 'demo-azamat';
   const score = (c: Conversation, n: number, reason: string) => {
     c.lead_score = n; c.lead_label = n >= 70 ? 'hot' : n >= 40 ? 'warm' : 'cold'; c.lead_reason = reason; c.lead_scored_at = ago(MIN);
   };
@@ -79,6 +81,13 @@ function seed(): { convs: Conversation[]; msgs: Record<string, Message[]> } {
 
 export function createDemoBackend(): InboxBackend {
   const data = seed();
+  const convs = data.convs;
+  const members: Member[] = [
+    { user_id: 'demo-owner', email: 'owner@demo.test', display_name: 'Владелец (демо)', role: 'owner', active: true },
+    { user_id: 'demo-director', email: 'director@demo.test', display_name: 'Руслан (директор)', role: 'director', active: true },
+    { user_id: 'demo-azamat', email: 'azamat@demo.test', display_name: 'Азамат', role: 'manager', active: true },
+    { user_id: 'demo-aizada', email: 'aizada@demo.test', display_name: 'Айзада', role: 'manager', active: true },
+  ];
   const listeners = new Set<(e: ChangeEvent) => void>();
   const emit = (e: ChangeEvent) => listeners.forEach((l) => l(e));
   const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
@@ -102,6 +111,46 @@ export function createDemoBackend(): InboxBackend {
       if (action === 'mark_read' || action === 'takeover') c.manager_last_read_at = new Date().toISOString();
       emit({ table: 'conversations', conversationId: id });
       return { ok: true, state: c.state };
+    },
+    async me(): Promise<Me> { return { user_id: 'demo-owner', role: 'owner', email: 'owner@demo.test', display_name: 'Владелец (демо)' }; },
+    async listTeam(): Promise<Member[]> { return members.map((m) => ({ ...m })); },
+    async teamStats(): Promise<TeamStats> {
+      const mgrs = members.filter((m) => m.role === 'manager' && m.active);
+      return {
+        role: 'owner', since: ago(30 * 24 * HOUR),
+        managers: mgrs.map((m, i) => ({ user_id: m.user_id, name: m.display_name, assigned_total: 6 - i, open_now: 2 - i, replies: 41 - i * 12, won: 3 - i, lost: 1 + i, avg_response_min: 4.5 + i * 3 })),
+        summary: { total: convs.length, ai_active: convs.filter((c) => c.state === 'ai_active').length, human_requested: convs.filter((c) => c.state === 'human_requested').length, human_handling: convs.filter((c) => c.state === 'human_handling').length, unassigned: convs.filter((c) => !c.assigned_to).length, hot_open: 1, won: 4, lost: 3 },
+      };
+    },
+    async assign(id, userId): Promise<SimpleResult> {
+      await sleep(300);
+      const c = byId(id);
+      if (!c) return { ok: false, error: 'Диалог не найден.' };
+      c.assigned_to = userId; c.assigned_at = userId ? new Date().toISOString() : null;
+      emit({ table: 'conversations', conversationId: id });
+      return { ok: true };
+    },
+    async addMember(input): Promise<SimpleResult> {
+      await sleep(300);
+      members.push({ user_id: `demo-${members.length}`, email: input.email, display_name: input.name || null, role: input.role, active: true });
+      return { ok: true };
+    },
+    async updateMember(userId, patch): Promise<SimpleResult> {
+      const m = members.find((x) => x.user_id === userId);
+      if (!m || m.role === 'owner') return { ok: false, error: 'Недостаточно прав для этого действия.' };
+      if (patch.role) m.role = patch.role;
+      if (patch.name) m.display_name = patch.name;
+      if (patch.active !== undefined) { m.active = patch.active; if (!patch.active) for (const c of convs) if (c.assigned_to === userId) c.assigned_to = null; }
+      emit({ table: 'conversations' });
+      return { ok: true };
+    },
+    async removeMember(userId): Promise<SimpleResult> {
+      const i = members.findIndex((x) => x.user_id === userId && x.role !== 'owner');
+      if (i < 0) return { ok: false, error: 'Недостаточно прав для этого действия.' };
+      for (const c of convs) if (c.assigned_to === userId) c.assigned_to = null;
+      members.splice(i, 1);
+      emit({ table: 'conversations' });
+      return { ok: true };
     },
     async setOutcome(id, outcome: Outcome | 'open'): Promise<OutcomeResult> {
       await sleep(300);

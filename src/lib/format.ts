@@ -95,3 +95,13 @@ export function statusView(m: Pick<Message, 'status' | 'status_updated_at' | 'er
 export function newIdempotencyKey(): string {
   return crypto.randomUUID();
 }
+
+export const ROLE_LABEL: Record<'owner' | 'director' | 'manager', string> = {
+  owner: 'Владелец',
+  director: 'Директор по продажам',
+  manager: 'Менеджер по продажам',
+};
+
+export function memberName(m: { display_name: string | null; email: string | null } | undefined): string {
+  return m?.display_name?.trim() || m?.email || 'Сотрудник';
+}

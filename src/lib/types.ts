@@ -4,6 +4,19 @@ export type SenderRole = 'customer' | 'ai' | 'manager';
 export type StateAction = 'takeover' | 'resume' | 'mark_read';
 export type LeadLabel = 'cold' | 'warm' | 'hot';
 export type Outcome = 'won' | 'lost';
+export type Role = 'owner' | 'director' | 'manager';
+
+export interface Me { user_id: string; role: Role; email: string | null; display_name: string | null }
+export interface Member { user_id: string; email: string | null; display_name: string | null; role: Role; active: boolean }
+export interface ManagerStats {
+  user_id: string; name: string | null; assigned_total: number; open_now: number; replies: number; won: number; lost: number;
+  avg_response_min: number | null;
+}
+export interface TeamStats {
+  role: Role; since: string; managers: ManagerStats[];
+  summary: { total: number; ai_active: number; human_requested: number; human_handling: number; unassigned: number; hot_open: number; won: number; lost: number };
+}
+export type SimpleResult = { ok: true } | { ok: false; error: string };
 
 export interface Conversation {
   id: string;
@@ -17,6 +30,9 @@ export interface Conversation {
   last_message_at: string | null;
   last_message_preview: string | null;
   manager_last_read_at: string | null;
+  /** The sales manager responsible for this chat; null = unassigned (only owner/director see it). */
+  assigned_to: string | null;
+  assigned_at: string | null;
   /** AI estimate of buying likelihood, 0-100. An estimate, not a probability. */
   lead_score: number | null;
   lead_label: LeadLabel | null;
@@ -85,6 +101,13 @@ export interface InboxBackend {
   subscribe(onChange: (e: ChangeEvent) => void, onStatus: (s: 'on' | 'off') => void): () => void;
   action(conversationId: string, action: StateAction): Promise<ActionResult>;
   setOutcome(conversationId: string, outcome: Outcome | 'open'): Promise<OutcomeResult>;
+  me(): Promise<Me>;
+  listTeam(): Promise<Member[]>;
+  teamStats(days: number): Promise<TeamStats>;
+  assign(conversationId: string, userId: string | null): Promise<SimpleResult>;
+  addMember(input: { email: string; name: string; role: 'director' | 'manager'; password: string }): Promise<SimpleResult>;
+  updateMember(userId: string, patch: { role?: 'director' | 'manager'; name?: string; active?: boolean }): Promise<SimpleResult>;
+  removeMember(userId: string): Promise<SimpleResult>;
   sendReply(input: SendInput): Promise<SendResult>;
   integrationStatus(): Promise<IntegrationStatus>;
 }

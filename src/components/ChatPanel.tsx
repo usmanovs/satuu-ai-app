@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/input';
 import { MessageBubble } from '@/components/MessageBubble';
 import { LeadBadge, stateTone } from '@/components/ConversationList';
-import { displayName, formatAgo, formatDay, inServiceWindow, newIdempotencyKey, sameDay, STATE_LABEL, windowRemaining } from '@/lib/format';
-import type { Conversation, IntegrationStatus, Message, Outcome, SendInput, SendResult } from '@/lib/types';
+import { displayName, formatAgo, memberName, formatDay, inServiceWindow, newIdempotencyKey, sameDay, STATE_LABEL, windowRemaining } from '@/lib/format';
+import type { Conversation, IntegrationStatus, Member, Message, Outcome, Role, SendInput, SendResult } from '@/lib/types';
 
 interface Props {
   conv: Conversation;
@@ -19,6 +19,9 @@ interface Props {
   onTakeover: () => void;
   onResume: () => void;
   onSend: (input: SendInput) => Promise<SendResult>;
+  role: Role;
+  members: Member[];
+  onAssign: (userId: string | null) => Promise<string | null>;
   onOutcome: (outcome: Outcome | 'open') => void;
   outcomeBusy: boolean;
   outcomeError: string | undefined;
@@ -28,11 +31,22 @@ interface Props {
 type Notice = { tone: 'error' | 'warn'; text: string };
 interface Attempt { key: string; text: string; template: boolean }
 
-export function ChatPanel({ conv, messages, integration, demo, now, pendingAction, actionError, onTakeover, onResume, onSend, onOutcome, outcomeBusy, outcomeError, onBack }: Props) {
+export function ChatPanel({ conv, messages, integration, demo, now, pendingAction, actionError, onTakeover, onResume, onSend, role, members, onAssign, onOutcome, outcomeBusy, outcomeError, onBack }: Props) {
   const [text, setText] = useState('');
   const [sending, setSending] = useState<Attempt | null>(null);
   const [attempt, setAttempt] = useState<Attempt | null>(null); // kept only after an ambiguous network failure
   const [notice, setNotice] = useState<Notice | null>(null);
+  const [assignBusy, setAssignBusy] = useState(false);
+  const [assignError, setAssignError] = useState<string | null>(null);
+  const canAssign = role !== 'manager';
+  const assignee = members.find((m) => m.user_id === conv.assigned_to);
+
+  async function changeAssignee(value: string) {
+    setAssignBusy(true); setAssignError(null);
+    const err = await onAssign(value === '' ? null : value);
+    setAssignBusy(false);
+    if (err) setAssignError(err);
+  }
   const endRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { endRef.current?.scrollIntoView({ block: 'end' }); }, [messages?.length, conv.id, sending]);
@@ -126,6 +140,26 @@ export function ChatPanel({ conv, messages, integration, demo, now, pendingActio
       </header>
 
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b bg-card px-4 py-2 text-[13px]">
+        <div className="flex basis-full items-center gap-2">
+          <span className="text-muted-foreground">Ответственный:</span>
+          {canAssign ? (
+            <>
+              <select
+                value={conv.assigned_to ?? ''} onChange={(e) => void changeAssignee(e.target.value)} disabled={assignBusy}
+                aria-label="Назначить менеджера" className="h-8 rounded-md border bg-card px-2 text-[13px]"
+              >
+                <option value="">Не назначен</option>
+                {members.filter((m) => m.role === 'manager' && (m.active || m.user_id === conv.assigned_to)).map((m) => (
+                  <option key={m.user_id} value={m.user_id}>{memberName(m)}{m.active ? '' : ' (отключён)'}</option>
+                ))}
+              </select>
+              {assignBusy && <Loader2 className="size-4 animate-spin text-muted-foreground" />}
+            </>
+          ) : (
+            <b>{assignee ? memberName(assignee) : 'Вы'}</b>
+          )}
+          {assignError && <span className="text-red-700">Не удалось назначить: {assignError}</span>}
+        </div>
         <p className="min-w-0 flex-1 text-muted-foreground">
           {conv.lead_score !== null
             ? <>Оценка AI (не вероятность): <b className="text-foreground">{conv.lead_score}/100</b>{conv.lead_reason ? ` — ${conv.lead_reason}` : ''}</>

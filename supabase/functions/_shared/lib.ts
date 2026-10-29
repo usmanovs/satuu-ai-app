@@ -57,15 +57,18 @@ export async function requireIntegration(req: Request, body: Record<string, unkn
 }
 
 /** Manager authentication: identity and business come from the verified JWT + membership, never from the body. */
-export async function requireManager(req: Request): Promise<{ userId: string; businessId: string }> {
+export type Role = 'owner' | 'director' | 'manager';
+
+export async function requireManager(req: Request): Promise<{ userId: string; businessId: string; role: Role; email: string | null; displayName: string | null }> {
   const token = bearerToken(req.headers.get('authorization'));
   if (!token) throw new HttpError(401, 'unauthorized', 'Требуется вход в систему.');
   const { data, error } = await admin().auth.getUser(token);
   if (error || !data.user) throw new HttpError(401, 'unauthorized', 'Сессия недействительна. Войдите снова.');
   const { data: rows, error: mErr } = await admin()
     .from('business_memberships')
-    .select('business_id')
+    .select('business_id, role, email, display_name')
     .eq('user_id', data.user.id)
+    .eq('active', true)
     .order('created_at', { ascending: true })
     .limit(1);
   if (mErr) {
@@ -73,7 +76,10 @@ export async function requireManager(req: Request): Promise<{ userId: string; bu
     throw new HttpError(500, 'internal_error', 'Внутренняя ошибка сервера.');
   }
   if (!rows || rows.length === 0) throw new HttpError(403, 'forbidden', 'У вас нет доступа к бизнесу.');
-  return { userId: data.user.id, businessId: rows[0].business_id as string };
+  return {
+    userId: data.user.id, businessId: rows[0].business_id as string, role: rows[0].role as Role,
+    email: (rows[0].email as string | null) ?? data.user.email ?? null, displayName: (rows[0].display_name as string | null) ?? null,
+  };
 }
 
 export async function readJson(req: Request): Promise<Record<string, unknown>> {

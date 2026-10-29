@@ -42,7 +42,11 @@ function Authenticated({ client, session }: { client: SupabaseClient; session: S
       </Screen>
     );
   }
-  return <Inbox backend={backend} businessName={business.name} onSignOut={() => client.auth.signOut()} />;
+  async function changePassword(password: string): Promise<string | null> {
+    const { error } = await client.auth.updateUser({ password });
+    return error ? error.message : null;
+  }
+  return <Inbox backend={backend} businessName={business.name} onSignOut={() => client.auth.signOut()} onChangePassword={changePassword} />;
 }
 
 function LiveApp({ client }: { client: SupabaseClient }) {

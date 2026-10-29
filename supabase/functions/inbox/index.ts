@@ -1,6 +1,7 @@
 // Dashboard backend. Auth: the manager's Supabase JWT. Business and manager identity are
 // derived from it; any business_id / user_id in the body is ignored.
-// Routes: POST /conversation-action, POST /conversation-outcome, POST /send-reply, GET|POST /status
+// Routes: GET /me, GET /team, GET|POST /status, POST /conversation-action, /conversation-outcome, /assign,
+// /send-reply, /team-stats, /team-add, /team-update, /team-remove. Roles: owner | director | manager.
 import {
   admin, errorResponse, HttpError, json, preflight, readJson, requireManager, rpc,
 } from '../_shared/lib.ts';
@@ -26,7 +27,7 @@ Deno.serve(async (req) => {
   if (pre) return pre;
   try {
     const route = new URL(req.url).pathname.split('/').filter(Boolean).pop();
-    const { userId, businessId } = await requireManager(req);
+    const { userId, businessId, role, email, displayName } = await requireManager(req);
     const cfg = config();
 
     if (route === 'status') {
@@ -40,6 +41,12 @@ Deno.serve(async (req) => {
       });
     }
 
+    if (route === 'me') return json({ user_id: userId, role, email, display_name: displayName });
+
+    if (route === 'team' && req.method === 'GET') {
+      return json({ members: await rpc('team_list', { p_business: businessId, p_user: userId }) });
+    }
+
     if (req.method !== 'POST') throw new HttpError(405, 'method_not_allowed', 'Используйте POST.');
     const body = await readJson(req);
 
@@ -50,6 +57,62 @@ Deno.serve(async (req) => {
       const result = await rpc('set_conversation_state', {
         p_business: businessId, p_conversation: conversationId, p_action: action, p_user: userId,
       });
+      return json(result);
+    }
+
+    if (route === 'assign') {
+      const conversationId = reqStr(body, 'conversation_id', 36);
+      if (!UUID.test(conversationId)) throw new HttpError(422, 'invalid_field', 'Недопустимый conversation_id.');
+      const to = body.assigned_to === null || body.assigned_to === undefined ? null : reqStr(body, 'assigned_to', 36);
+      if (to !== null && !UUID.test(to)) throw new HttpError(422, 'invalid_field', 'Недопустимый assigned_to.');
+      return json(await rpc('assign_conversation', { p_business: businessId, p_conversation: conversationId, p_to: to, p_by: userId }));
+    }
+
+    if (route === 'team-stats') {
+      const days = Number.isInteger(body.days) && (body.days as number) > 0 && (body.days as number) <= 365 ? (body.days as number) : 30;
+      const since = new Date(Date.now() - days * 86_400_000).toISOString();
+      return json(await rpc('team_stats', { p_business: businessId, p_user: userId, p_since: since }));
+    }
+
+    if (route === 'team-add') {
+      if (role !== 'owner') throw new HttpError(403, 'forbidden', 'Недостаточно прав для этого действия.');
+      const newEmail = reqStr(body, 'email', 200).toLowerCase();
+      const newRole = reqStr(body, 'role', 10);
+      const name = optStr(body, 'name', 100);
+      const password = reqStr(body, 'password', 72);
+      if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(newEmail)) throw new HttpError(422, 'invalid_field', 'Недопустимый email.');
+      if (newRole !== 'director' && newRole !== 'manager') throw new HttpError(422, 'invalid_role', 'Роль должна быть director или manager.');
+      if (password.length < 8) throw new HttpError(422, 'weak_password', 'Пароль должен быть не короче 8 символов.');
+      const { data: created, error: cErr } = await admin().auth.admin.createUser({ email: newEmail, password, email_confirm: true });
+      if (cErr || !created.user) {
+        throw new HttpError(409, 'user_exists', 'Не удалось создать пользователя: возможно, этот email уже зарегистрирован.');
+      }
+      try {
+        await rpc('team_add_member', {
+          p_business: businessId, p_actor: userId, p_user: created.user.id, p_email: newEmail, p_name: name, p_role: newRole,
+        });
+      } catch (e) {
+        await admin().auth.admin.deleteUser(created.user.id); // never leave an orphan login behind
+        throw e;
+      }
+      return json({ user_id: created.user.id, email: newEmail, role: newRole });
+    }
+
+    if (route === 'team-update') {
+      const target = reqStr(body, 'user_id', 36);
+      if (!UUID.test(target)) throw new HttpError(422, 'invalid_field', 'Недопустимый user_id.');
+      const newRole = optStr(body, 'role', 10);
+      const active = typeof body.active === 'boolean' ? body.active : null;
+      return json(await rpc('team_update_member', {
+        p_business: businessId, p_actor: userId, p_target: target, p_role: newRole, p_name: optStr(body, 'name', 100), p_active: active,
+      }));
+    }
+
+    if (route === 'team-remove') {
+      const target = reqStr(body, 'user_id', 36);
+      if (!UUID.test(target)) throw new HttpError(422, 'invalid_field', 'Недопустимый user_id.');
+      const result = await rpc('team_remove_member', { p_business: businessId, p_actor: userId, p_target: target });
+      await admin().auth.admin.deleteUser(target); // membership is gone; remove the login too
       return json(result);
     }
 
@@ -76,6 +139,9 @@ Deno.serve(async (req) => {
       if (useTemplate && !cfg.templateConfigured) {
         throw new HttpError(503, 'template_not_configured', 'Не подключено: шаблон WhatsApp не настроен.');
       }
+
+      // backend permission check: a manager may only reply in a chat assigned to them
+      await rpc('assert_conversation_access', { p_business: businessId, p_user: userId, p_conversation: conversationId });
 
       const created = await rpc<{ created: boolean; message: Record<string, unknown>; wa_id: string }>(
         'create_human_message',
