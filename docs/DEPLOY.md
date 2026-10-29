@@ -4,6 +4,7 @@
 - GitHub (private): https://github.com/usmanovs/satuu-inbox, branch `main`.
 - Dashboard (Vercel, production): **https://satuu-inbox.vercel.app**. It is a static Vite build using the Supabase project below. Verified: HTTP 200, shows the login screen in live mode (no demo banner), and its bundle contains the public project URL and no service-role key.
 - The Vercel project was created from the local folder by CLI and is **not** linked to the GitHub repo, so pushes do not auto-deploy. To enable that: Vercel → project `satuu-inbox` → Settings → Git → Connect `usmanovs/satuu-inbox`.
+- Owner provisioned on 2026-10-29: business "Satuu AI", `business_id` `8c295ab3-d846-41f2-a28d-f077ca8c24a0` (an identifier, not a secret), owner login `usmanov.seyitbek@gmail.com`. Public sign-ups are off and the Auth Site URL is the dashboard URL (both saved and re-checked in the Supabase dashboard). No integration key has been created yet (not needed until the n8n step).
 - Nothing here changes n8n, and the WhatsApp integration is **not connected**.
 
 ## Which Supabase project the dashboard uses
