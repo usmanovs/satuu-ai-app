@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Bot, Hand, Loader2, Send, TriangleAlert } from 'lucide-react';
+import { ArrowLeft, Bot, Hand, Loader2, MessageCircle, Phone, Send, TriangleAlert } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/input';
@@ -34,6 +34,7 @@ export function ChatPanel({ conv, messages, integration, demo, now, pendingActio
 
   useEffect(() => { endRef.current?.scrollIntoView({ block: 'end' }); }, [messages?.length, conv.id, sending]);
 
+  const phoneDigits = conv.contacts.wa_id.replace(/\D/g, '');
   const handling = conv.state === 'human_handling';
   const inWindow = inServiceWindow(conv.last_inbound_at, now);
   const sendConnected = demo || integration?.send_configured === true;
@@ -91,6 +92,20 @@ export function ChatPanel({ conv, messages, integration, demo, now, pendingActio
           <p className="truncate text-xs text-muted-foreground">+{conv.contacts.wa_id}</p>
         </div>
         <div className="flex shrink-0 gap-2">
+          <a
+            href={`tel:+${phoneDigits}`}
+            title="Позвонить клиенту с вашего телефона (номер бизнеса в WhatsApp для звонков не используется)"
+            className="inline-flex h-8 items-center gap-1.5 rounded-md border bg-background px-3 text-sm font-medium hover:bg-muted"
+          >
+            <Phone className="size-4" /><span className="hidden sm:inline">Позвонить</span>
+          </a>
+          <a
+            href={`https://wa.me/${phoneDigits}`} target="_blank" rel="noopener noreferrer"
+            title="Открыть чат в приложении WhatsApp"
+            className="hidden h-8 items-center gap-1.5 rounded-md border bg-background px-3 text-sm font-medium hover:bg-muted sm:inline-flex"
+          >
+            <MessageCircle className="size-4" /><span>Открыть в WhatsApp</span>
+          </a>
           {conv.state !== 'ai_active' && (
             <Button variant={handling ? 'default' : 'outline'} size="sm" onClick={onResume} disabled={!!pendingAction}>
               {pendingAction === 'resume' ? <Loader2 className="animate-spin" /> : <Bot />}
