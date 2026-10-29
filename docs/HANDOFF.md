@@ -7,16 +7,16 @@ Prepared 2026-10-29 from the repository and the deployed Supabase **test** proje
 ## 0. Bottom line
 - The Supabase side (schema, RLS, SQL functions, two Edge Functions) is IMPLEMENTED, DEPLOYED to a throwaway test project, and TESTED over real HTTP with real Auth/Postgres.
 - **Nothing in n8n has been changed, and nothing has been tested against n8n or the WhatsApp Cloud API.** The integration is **not live**.
-- There is **no deployed dashboard, no GitHub repository, no hosting configured** (no GitHub/hosting access was available; see `docs/DEPLOY.md`). The code is a local git repo with no remote.
+- The code is in a private GitHub repo and the dashboard is deployed on Vercel (URLs in §1). No owner account exists yet.
 - Update (later the same day): added the `claim-human-send` endpoint (database-enforced idempotency for n8n), bound `request-human` to the triggering message (no customer id parameter), and documented batch handling; migration 4 applied and `n8n` function v2 deployed; integration tests now 30/30, unit tests 21/21.
 - The test project is currently **empty** of data (test fixtures were removed). A real owner, business and integration key do not exist yet.
 
 ## 1. Project access
 | Item | State |
 |---|---|
-| Dashboard URL | **MISSING** — not deployed. It would use Supabase project `mejaptdkcwxwcetxfdtr` ("Satuu AI"). Run locally (`npm run dev`) or deploy `dist/` (`docs/DEPLOY.md`). |
-| GitHub repo | **MISSING** — local repo only: `/Users/seyitbek/Sales Super Bot`, branch `main`, commit `40b86a2`. Push to a remote or share the folder. |
-| Hosting | **MISSING** — none chosen. The app is a static Vite build (any static host) plus Supabase for backend. |
+| Dashboard URL | **https://satuu-inbox.vercel.app** (Vercel, deployed; live login screen verified; no owner exists yet, so no one can log in). Uses Supabase project `mejaptdkcwxwcetxfdtr`. |
+| GitHub repo | **https://github.com/usmanovs/satuu-inbox** (private, branch `main`). |
+| Hosting | Vercel (team `seyitbek's projects`, project `satuu-inbox`), deployed by CLI, not yet linked to the Git repo. |
 | Stack | React 19 + TypeScript + Vite + Tailwind v4 + shadcn/ui-style components; Supabase Auth, Postgres, Realtime, Edge Functions (Deno). |
 
 Key paths: `supabase/migrations/*.sql` · `supabase/functions/n8n/index.ts` · `supabase/functions/inbox/index.ts` · `supabase/functions/_shared/{lib,pure}.ts` · `supabase/provisioning/*.sql` · `src/lib/{liveBackend,demoBackend,types,format}.ts` · `src/components/*` · `tests/integration.test.mjs` · `docs/{PROVISIONING,N8N_INTEGRATION,MIGRATION_PLAN}.md` · `.env.example` · `supabase/.env.functions.example`.

@@ -1,12 +1,17 @@
 # Deploy and hand-over steps
 
-**Status on 2026-10-29:** the GitHub repository and the hosted dashboard do **not exist yet**. This environment had no GitHub or hosting access (no `gh`, no hosting CLI or connector, no credentials), so those two steps are yours; the exact commands are below. Nothing here changes n8n, and the WhatsApp integration is **not connected**.
+**Status on 2026-10-29:**
+- GitHub (private): https://github.com/usmanovs/satuu-inbox, branch `main`.
+- Dashboard (Vercel, production): **https://satuu-inbox.vercel.app**. It is a static Vite build using the Supabase project below. Verified: HTTP 200, shows the login screen in live mode (no demo banner), and its bundle contains the public project URL and no service-role key.
+- The Vercel project was created from the local folder by CLI and is **not** linked to the GitHub repo, so pushes do not auto-deploy. To enable that: Vercel → project `satuu-inbox` → Settings → Git → Connect `usmanovs/satuu-inbox`.
+- Nothing here changes n8n, and the WhatsApp integration is **not connected**.
 
 ## Which Supabase project the dashboard uses
 | | |
 |---|---|
 | Project | **"Satuu AI"**, ref `mejaptdkcwxwcetxfdtr`, region ap-south-1 (the project you created for this app) |
 | API URL | `https://mejaptdkcwxwcetxfdtr.supabase.co` |
+| Deployed dashboard | https://satuu-inbox.vercel.app (Vercel team `seyitbek's projects`, project `satuu-inbox`) |
 | Dashboard setting | `VITE_SUPABASE_URL=https://mejaptdkcwxwcetxfdtr.supabase.co` and `VITE_SUPABASE_ANON_KEY=<public anon/publishable key>` |
 | What is in it | 4 migrations applied; Edge Functions `n8n` (v2) and `inbox` deployed; **0 rows**: no owner, no business, no integration key; **no Edge Function secrets set** |
 | Leftovers | `mock-n8n` and `inbox-selftest` are neutralised stubs that answer `410`; delete them in Dashboard → Edge Functions when convenient |
@@ -20,28 +25,12 @@ supabase migration repair --status reverted 20261029121313 20261029121323 202610
 supabase migration repair --status applied 20261029000001 20261029000002 20261029000003 20261029000004
 ```
 
-## 1. Push the repository to a private GitHub repo
-The repo is local (`/Users/seyitbek/Sales Super Bot`, branch `main`). No remote is configured. Secrets are excluded: `.gitignore` covers `.env`, `.env.*` and `supabase/.env.functions`; only the two placeholder files `.env.example` and `supabase/.env.functions.example` are tracked. A scan of tracked files found no keys or tokens.
+## 1. GitHub: done
+Private repo `usmanovs/satuu-inbox`, pushed from `main`. Secrets excluded: `.gitignore` covers `.env`, `.env.*`, `supabase/.env.functions`, `.vercel`; only the two placeholder `.example` files are tracked, and a scan of the files and full history found no keys or tokens.
 
-With the GitHub CLI:
-```bash
-gh auth login
-gh repo create satuu-inbox --private --source . --remote origin --push
-```
-Without it: create an empty **private** repository on github.com (no README), then
-```bash
-git remote add origin https://github.com/<you>/satuu-inbox.git
-git push -u origin main
-```
-Check afterwards: `git ls-files | grep -E '\.env'` must list only the two `.example` files.
-
-## 2. Deploy the dashboard (static site)
-Vite app, no server needed. On Vercel, Netlify or Cloudflare Pages: import the GitHub repo and set
-- Build command `npm run build`, output directory `dist`
-- Environment variables (public by design): `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` (Dashboard → Settings → API → anon/publishable key)
-- Do **not** set `VITE_DEMO_MODE`. Never put the service-role key anywhere in this project.
-
-Then in Supabase → Authentication → URL Configuration set **Site URL** to the deployed URL, and optionally set the Edge Function secret `ALLOWED_ORIGIN` to it.
+## 2. Dashboard: done, plus one step for you
+Deployed to Vercel with build env `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` (public by design). To redeploy: `npx vercel deploy --prod` from the repo (log in first) or connect the Git repo in Vercel (see above).
+**Still to do (needs your Supabase dashboard):** Authentication → URL Configuration → set **Site URL** to `https://satuu-inbox.vercel.app`; optionally set the Edge Function secret `ALLOWED_ORIGIN` to the same URL. Do not set `VITE_DEMO_MODE`.
 
 ## 3. Create the owner (once)
 1. Dashboard → Authentication → Users → **Add user** (email + password, *Auto Confirm User*).
@@ -51,9 +40,8 @@ Then in Supabase → Authentication → URL Configuration set **Site URL** to th
 
 Users cannot make themselves members: `business_memberships` has no INSERT policy and the browser role has `SELECT` only.
 
-## 4. Remaining setup (in order; n8n is untouched until step 5)
-1. Push to GitHub (§1). **Blocked on your GitHub access.**
-2. Deploy the dashboard (§2). **Blocked on your hosting account.**
-3. Provision the owner and the integration key (§3).
-4. Optional now: set Edge Function secrets (`supabase secrets set …`; see `supabase/.env.functions.example`). Until `N8N_SEND_WEBHOOK_URL` and `N8N_SEND_WEBHOOK_SECRET` exist the composer shows «Не подключено».
-5. Build the n8n changes in `docs/N8N_INTEGRATION.md` (flatten batch, ingest, gates, claim-based human-send workflow) on a **copy** of the workflow, then run the end-to-end checklist in `docs/HANDOFF.md` §7.
+## 4. Remaining setup (in order; n8n is untouched until step 4)
+1. Supabase Site URL (§2).
+2. Provision the owner and the integration key (§3). Until then nobody can log in to the dashboard.
+3. Optional now: set Edge Function secrets (`supabase secrets set …`; see `supabase/.env.functions.example`). Until `N8N_SEND_WEBHOOK_URL` and `N8N_SEND_WEBHOOK_SECRET` exist the composer shows «Не подключено».
+4. Build the n8n changes in `docs/N8N_INTEGRATION.md` on a **copy** of the workflow, then run the end-to-end checklist in `docs/HANDOFF.md` §7.
