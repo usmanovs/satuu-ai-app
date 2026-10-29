@@ -202,3 +202,21 @@ Smallest ordered checklist for **one** end-to-end test:
 10. (Optional, needs an approved template + `WA_TEMPLATE_NAME`) test the >24 h window with an idle number.
 
 Known unsolved race: an AI reply can still be sent in the gap between the final `before_send` check and the WhatsApp API call (documented in `docs/N8N_INTEGRATION.md`, not solved).
+
+## Live end-to-end test (2026-10-29) — real WhatsApp, real n8n, real Supabase
+
+Run by the owner from a personal phone against the production workflows (`Satuu Inbox Integration - Stage A`, `Satuu Human Send`). Checked afterwards in the Supabase database, the n8n execution list and the function logs.
+
+| Step | Result |
+|---|---|
+| WhatsApp send credential | Was failing (Meta error 190, invalid token); replaced; n8n connection test green |
+| Customer message → ingest | OK. Conversation + message stored; business `wa_phone_number_id` learned from the first inbound event |
+| AI gate | OK. n8n called `ai-permission` before generating and before sending (`last_ai_check_at` set); AI replies sent and recorded as `accepted`, then advanced to `read` by delivery receipts |
+| Delivery receipts | OK. Processed on a separate branch; never became chat messages |
+| "Позовите менеджера" | OK. Chat → `human_requested`; AI silent; exactly one notice sent and recorded. **Bug found and fixed:** notice was Kyrgyz for Russian text («менеджер» is Russian too) — now Russian unless Kyrgyz letters/words are present (fix republished; not re-tested live because the chat was already paused) |
+| Takeover in the dashboard | OK (`human_handling`, `state_updated_by` set) |
+| Reply from the dashboard | Initially blocked: Edge Function secrets were missing/wrong (URL row held the secret). After fixing: one manager message, claimed once, sent from the business number, status → `read` within 5 s; one n8n run (#79) |
+| Resume AI | OK. After «Вернуть AI», two customer messages were answered by the AI; permission checks passed |
+| Idempotency / failure / window | Covered by the earlier integration tests with a mock webhook; **not** re-exercised live. The >24 h window and template send are **untested live** (`WA_TEMPLATE_NAME` unset) |
+
+Still open: delete the retired Data Table nodes from Stage A; confirm payment link and refund terms for the agent; the sending number currently looks like Meta's sandbox test number (`display_phone_number` 15556517615), confirm which number customers will use; revoke/rotate anything that was ever printed in chat (the webhook secrets generated during setup are superseded); the integration test suite predates migrations 4–6 and was not re-run.
