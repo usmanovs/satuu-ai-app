@@ -6,17 +6,6 @@ import {
 } from '../_shared/lib.ts';
 import { optStr, parseTimestamp, reqStr } from '../_shared/pure.ts';
 
-// Remember which business number the chat uses and give an unassigned chat to that number's owner.
-// Never fails the message: ingest has already succeeded.
-async function routeToNumber(businessId: string, waId: string, phoneNumberId: string | null) {
-  if (!phoneNumberId) return;
-  try {
-    await rpc('route_conversation', { p_business: businessId, p_wa_id: waId, p_phone_number_id: phoneNumberId });
-  } catch (e) {
-    console.error('route_conversation failed:', e instanceof Error ? e.message : e);
-  }
-}
-
 Deno.serve(async (req) => {
   const pre = preflight(req);
   if (pre) return pre;
@@ -40,7 +29,6 @@ Deno.serve(async (req) => {
           // Cloud API phone_number_id of the business number; remembered so human replies are sent from it.
           p_phone_number_id: optStr(body, 'phone_number_id', 40),
         });
-        await routeToNumber(businessId, reqStr(body, 'sender_id', 64), optStr(body, 'phone_number_id', 40));
         return json(result);
       }
 
@@ -56,7 +44,6 @@ Deno.serve(async (req) => {
           p_ts: parseTimestamp(body.timestamp),
           p_phone_number_id: optStr(body, 'phone_number_id', 40),
         });
-        await routeToNumber(businessId, reqStr(body, 'to', 64), optStr(body, 'phone_number_id', 40));
         return json(result);
       }
 
@@ -67,6 +54,7 @@ Deno.serve(async (req) => {
           p_business: businessId,
           p_wa_id: reqStr(body, 'sender_id', 64),
           p_limit: limit,
+          p_phone_number_id: optStr(body, 'phone_number_id', 40),
         });
         return json(result);
       }
@@ -82,6 +70,7 @@ Deno.serve(async (req) => {
           p_wa_id: reqStr(body, 'sender_id', 64),
           p_score: Math.round(score),
           p_reason: optStr(body, 'reason', 200),
+          p_phone_number_id: optStr(body, 'phone_number_id', 40),
         });
         return json(result);
       }
@@ -96,6 +85,7 @@ Deno.serve(async (req) => {
           p_wa_id: reqStr(body, 'sender_id', 64),
           p_stage: reqStr(body, 'stage', 30),
           p_expected_version: (expected as number | null | undefined) ?? null,
+          p_phone_number_id: optStr(body, 'phone_number_id', 40),
         });
         return json(result);
       }
@@ -134,6 +124,7 @@ Deno.serve(async (req) => {
             p_text: optStr(body, 'text'),
             p_ts: parseTimestamp(body.timestamp),
             p_status: status,
+            p_phone_number_id: optStr(body, 'phone_number_id', 40),
           });
           return json(result);
         }

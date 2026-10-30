@@ -1,7 +1,7 @@
 // Dashboard backend. Auth: the manager's Supabase JWT. Business and manager identity are
 // derived from it; any business_id / user_id in the body is ignored.
 // Routes: GET /me, GET /team, GET|POST /status, POST /conversation-action, /conversation-outcome, /assign,
-// /send-reply, /team-stats, /team-add, /team-link, /team-update, /team-remove. Roles: owner | director | manager.
+// /send-reply, /team-stats, /team-add, /team-link, /team-update, /team-remove, /number-add, /number-save. Roles: owner | director | manager.
 import {
   admin, errorResponse, HttpError, json, preflight, readJson, requireManager, rpc,
 } from '../_shared/lib.ts';
@@ -54,10 +54,6 @@ Deno.serve(async (req) => {
       return json({ members: await rpc('team_list', { p_business: businessId, p_user: userId }) });
     }
 
-    if (route === 'numbers' && req.method === 'GET') {
-      return json({ numbers: await rpc('list_business_numbers', { p_business: businessId, p_user: userId }) });
-    }
-
     if (req.method !== 'POST') throw new HttpError(405, 'method_not_allowed', 'Используйте POST.');
     const body = await readJson(req);
 
@@ -79,14 +75,31 @@ Deno.serve(async (req) => {
       return json(await rpc('assign_conversation', { p_business: businessId, p_conversation: conversationId, p_to: to, p_by: userId }));
     }
 
-    if (route === 'number-set') {
-      const owner = body.owner_user_id === null || body.owner_user_id === undefined ? null : reqStr(body, 'owner_user_id', 36);
+    if (route === 'number-add') {
+      const phoneId = reqStr(body, 'phone_number_id', 25);
+      const owner = body.owner_user_id === null || body.owner_user_id === undefined || body.owner_user_id === '' ? null : reqStr(body, 'owner_user_id', 36);
       if (owner !== null && !UUID.test(owner)) throw new HttpError(422, 'invalid_field', 'Недопустимый owner_user_id.');
-      return json(await rpc('set_business_number', {
-        p_business: businessId, p_actor: userId, p_phone_number_id: reqStr(body, 'phone_number_id', 25),
-        p_display: optStr(body, 'display_phone', 40), p_label: optStr(body, 'label', 60), p_owner: owner,
-        p_active: typeof body.active === 'boolean' ? body.active : true,
+      return json(await rpc('number_add', {
+        p_business: businessId, p_actor: userId, p_phone_number_id: phoneId,
+        p_display_phone: optStr(body, 'display_phone', 40), p_label: optStr(body, 'label', 60), p_owner: owner,
       }));
+    }
+
+    if (route === 'number-save') {
+      const numberId = reqStr(body, 'number_id', 36);
+      if (!UUID.test(numberId)) throw new HttpError(422, 'invalid_field', 'Недопустимый number_id.');
+      // only these keys can ever reach the database function
+      const patch: Record<string, unknown> = {};
+      for (const key of ['label', 'display_phone', 'assistant_name', 'assistant_profile']) {
+        if (key in body) patch[key] = optStr(body, key, key === 'assistant_profile' ? 3000 : 120) ?? '';
+      }
+      if ('owner_user_id' in body) {
+        const o = body.owner_user_id === null || body.owner_user_id === '' ? '' : reqStr(body, 'owner_user_id', 36);
+        if (o !== '' && !UUID.test(o)) throw new HttpError(422, 'invalid_field', 'Недопустимый owner_user_id.');
+        patch.owner_user_id = o;
+      }
+      if (typeof body.active === 'boolean') patch.active = body.active;
+      return json(await rpc('number_save', { p_business: businessId, p_actor: userId, p_number: numberId, p_patch: patch }));
     }
 
     if (route === 'team-stats') {

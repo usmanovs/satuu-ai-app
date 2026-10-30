@@ -20,6 +20,8 @@ const DB_ERRORS: Record<string, [number, string]> = {
   user_in_other_business: [409, 'Этот пользователь уже состоит в команде.'],
   invalid_phone_number_id: [422, 'phone_number_id должен состоять из цифр (Cloud API phone_number_id).'],
   number_in_other_business: [409, 'Этот номер уже подключён к другому бизнесу.'],
+  phone_number_required: [422, 'Не указан phone_number_id.'],
+  number_exists: [409, 'Этот номер уже добавлен.'],
   invalid_outcome: [422, 'outcome должен быть won, lost или open.'],
   invalid_text: [422, 'Текст сообщения пуст или слишком длинный.'],
   invalid_idempotency_key: [422, 'Недопустимый ключ идемпотентности.'],
