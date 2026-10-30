@@ -44,3 +44,25 @@ After approval: in the Tech Provider page use **Generate link** for the Meta-hos
 1. Activate the n8n workflow "Satuu WhatsApp Echo Receiver" and create its two n8n variables.
 2. Set the webhook override for `smb_message_echoes`, `history` and `smb_app_state_sync` to that workflow's URL. `account_update` always goes to the app's default callback.
 3. Keep the WhatsApp Business app opened at least once every 14 days.
+
+## Reviewer instructions (paste into the "Provide instructions for accessing the app" field)
+Facebook Login: **No**. The dashboard signs in with email and password.
+
+```
+Satuu AI is the shared inbox of GETFORCE LLC, which sells online courses. Customers message our WhatsApp Business number; an automated assistant answers, and our sales team can take over any conversation and reply as a human. We use the WhatsApp Business Platform (Cloud API) only for our own business. We do not use Facebook Login.
+
+How to review
+1. Open https://satuu-inbox.vercel.app and sign in with the test account in the credentials field below (role: Sales Manager). The Inbox lists WhatsApp conversations.
+2. From WhatsApp, send any message to our business number. It appears in the inbox within seconds, and the assistant replies in WhatsApp. (Test number: +1 555-651-7615 while the app is in testing; add your number as a recipient if you want to try it yourself.)
+3. In the dashboard open the conversation, press "Взять диалог" (Take over), type a reply and send. The reply arrives in WhatsApp and its status moves from sent to delivered to read.
+4. Press "Вернуть AI" (Return to AI) to give the chat back to the assistant.
+5. Privacy Policy, Terms and data deletion instructions: https://satuu-inbox.vercel.app/privacy.html, /terms.html and /data-deletion.html.
+
+Permissions
+- whatsapp_business_messaging: receive customer messages through the webhook and send replies (steps 2 to 4).
+- whatsapp_business_management: onboard our own business account and phone number through Embedded Signup, and create the message templates used after the 24-hour window. A separate video shows a template being created through the API.
+
+The videos in "supporting documentation" show steps 2 to 4 and the template creation.
+```
+
+Test credentials field: the reviewer account's email and the password you set. Delete that account after the review.
