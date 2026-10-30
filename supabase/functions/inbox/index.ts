@@ -54,6 +54,10 @@ Deno.serve(async (req) => {
       return json({ members: await rpc('team_list', { p_business: businessId, p_user: userId }) });
     }
 
+    if (route === 'numbers' && req.method === 'GET') {
+      return json({ numbers: await rpc('list_business_numbers', { p_business: businessId, p_user: userId }) });
+    }
+
     if (req.method !== 'POST') throw new HttpError(405, 'method_not_allowed', 'Используйте POST.');
     const body = await readJson(req);
 
@@ -73,6 +77,16 @@ Deno.serve(async (req) => {
       const to = body.assigned_to === null || body.assigned_to === undefined ? null : reqStr(body, 'assigned_to', 36);
       if (to !== null && !UUID.test(to)) throw new HttpError(422, 'invalid_field', 'Недопустимый assigned_to.');
       return json(await rpc('assign_conversation', { p_business: businessId, p_conversation: conversationId, p_to: to, p_by: userId }));
+    }
+
+    if (route === 'number-set') {
+      const owner = body.owner_user_id === null || body.owner_user_id === undefined ? null : reqStr(body, 'owner_user_id', 36);
+      if (owner !== null && !UUID.test(owner)) throw new HttpError(422, 'invalid_field', 'Недопустимый owner_user_id.');
+      return json(await rpc('set_business_number', {
+        p_business: businessId, p_actor: userId, p_phone_number_id: reqStr(body, 'phone_number_id', 25),
+        p_display: optStr(body, 'display_phone', 40), p_label: optStr(body, 'label', 60), p_owner: owner,
+        p_active: typeof body.active === 'boolean' ? body.active : true,
+      }));
     }
 
     if (route === 'team-stats') {

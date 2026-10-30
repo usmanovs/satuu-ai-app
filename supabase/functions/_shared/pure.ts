@@ -18,6 +18,8 @@ const DB_ERRORS: Record<string, [number, string]> = {
   not_a_manager: [422, 'Назначить можно только активного менеджера по продажам.'],
   invalid_role: [422, 'Роль должна быть director или manager.'],
   user_in_other_business: [409, 'Этот пользователь уже состоит в команде.'],
+  invalid_phone_number_id: [422, 'phone_number_id должен состоять из цифр (Cloud API phone_number_id).'],
+  number_in_other_business: [409, 'Этот номер уже подключён к другому бизнесу.'],
   invalid_outcome: [422, 'outcome должен быть won, lost или open.'],
   invalid_text: [422, 'Текст сообщения пуст или слишком длинный.'],
   invalid_idempotency_key: [422, 'Недопустимый ключ идемпотентности.'],
