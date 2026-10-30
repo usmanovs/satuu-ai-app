@@ -26,10 +26,10 @@ JSON
 echo "POST $API/$WABA_ID/message_templates"
 echo "Authorization: Bearer ********"
 echo "Content-Type: application/json"
-echo "$BODY" | python3 -m json.tool
+echo "$BODY" | python3 -c "import sys,json; print(json.dumps(json.load(sys.stdin), ensure_ascii=False, indent=2))"
 echo
 echo "--- Response ---"
 curl -sS -X POST "$API/$WABA_ID/message_templates" \
   -H "Authorization: Bearer $WA_TOKEN" \
   -H "Content-Type: application/json" \
-  -d "$BODY" | python3 -m json.tool
+  -d "$BODY" | python3 -c "import sys,json; print(json.dumps(json.load(sys.stdin), ensure_ascii=False, indent=2))"
