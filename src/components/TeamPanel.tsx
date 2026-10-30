@@ -4,13 +4,16 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { memberName, ROLE_LABEL } from '@/lib/format';
-import type { InboxBackend, Me, Member, TeamStats } from '@/lib/types';
+import { NumbersSection } from '@/components/NumbersPanel';
+import type { InboxBackend, Me, Member, TeamStats, WaNumber } from '@/lib/types';
 
 interface Props {
   backend: InboxBackend;
   me: Me;
   members: Member[];
   onMembersChanged: () => void;
+  numbers: WaNumber[];
+  onNumbersChanged: () => void;
   onChangePassword?: (password: string) => Promise<string | null>;
 }
 
@@ -25,7 +28,7 @@ function Card({ label, value, tone }: { label: string; value: number | string; t
   );
 }
 
-export function TeamPanel({ backend, me, members, onMembersChanged, onChangePassword }: Props) {
+export function TeamPanel({ backend, me, members, onMembersChanged, numbers, onNumbersChanged, onChangePassword }: Props) {
   const [days, setDays] = useState(30);
   const [stats, setStats] = useState<TeamStats | null>(null);
   const [statsError, setStatsError] = useState<string | null>(null);
@@ -106,6 +109,8 @@ export function TeamPanel({ backend, me, members, onMembersChanged, onChangePass
             </>
           )}
         </section>
+
+        <NumbersSection backend={backend} me={me} members={members} numbers={numbers} onChanged={onNumbersChanged} />
 
         {isOwner && <MembersSection backend={backend} members={members} onChanged={onMembersChanged} />}
         {onChangePassword && <PasswordSection onChangePassword={onChangePassword} />}

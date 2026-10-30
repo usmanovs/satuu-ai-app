@@ -6,7 +6,7 @@ import { ChatPanel } from '@/components/ChatPanel';
 import { ConversationList, type Filter } from '@/components/ConversationList';
 import { TeamPanel } from '@/components/TeamPanel';
 import { formatAgo, isUnread, memberName, ROLE_LABEL } from '@/lib/format';
-import type { Conversation, InboxBackend, IntegrationStatus, Me, Member, Message, Outcome, SendInput, SendResult } from '@/lib/types';
+import type { Conversation, InboxBackend, IntegrationStatus, Me, Member, Message, Outcome, SendInput, SendResult, WaNumber } from '@/lib/types';
 
 interface Props {
   backend: InboxBackend;
@@ -36,6 +36,7 @@ export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Pr
   const [view, setView] = useState<'inbox' | 'team'>('inbox');
   const [me, setMe] = useState<Me | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
+  const [numbers, setNumbers] = useState<WaNumber[]>([]);
   const [assignee, setAssignee] = useState('all');
   const [outcomeBusy, setOutcomeBusy] = useState<string | null>(null);
   const [outcomeError, setOutcomeError] = useState<Record<string, string>>({});
@@ -61,13 +62,17 @@ export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Pr
     try { setMembers(await backend.listTeam()); } catch { /* names fall back to "Сотрудник" */ }
   }, [backend]);
 
+  const refreshNumbers = useCallback(async () => {
+    try { setNumbers(await backend.listNumbers()); } catch { /* the chat list works without numbers */ }
+  }, [backend]);
+
   const refreshStatus = useCallback(async () => {
     try { setIntegration(await backend.integrationStatus()); } catch { setIntegration(null); }
   }, [backend]);
 
   // initial load + realtime + slow polling as a safety net
   useEffect(() => {
-    void refreshList(); void refreshStatus(); void refreshMembers();
+    void refreshList(); void refreshStatus(); void refreshMembers(); void refreshNumbers();
     backend.me().then(setMe).catch(() => setMe(null));
     let timer: ReturnType<typeof setTimeout> | undefined;
     const unsubscribe = backend.subscribe(
@@ -82,7 +87,7 @@ export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Pr
     );
     const poll = setInterval(() => { void refreshList(); void refreshStatus(); if (selectedRef.current) void refreshMessages(selectedRef.current); }, 30_000);
     return () => { unsubscribe(); clearInterval(poll); clearTimeout(timer); };
-  }, [backend, refreshList, refreshMembers, refreshMessages, refreshStatus]);
+  }, [backend, refreshList, refreshMembers, refreshNumbers, refreshMessages, refreshStatus]);
 
   const selected = useMemo(() => convs?.find((c) => c.id === selectedId) ?? null, [convs, selectedId]);
 
@@ -170,7 +175,7 @@ export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Pr
 
       {view === 'team' && me ? (
         <main className="min-h-0 flex-1">
-          <TeamPanel backend={backend} me={me} members={members} onMembersChanged={() => { void refreshMembers(); void refreshList(); }} onChangePassword={onChangePassword} />
+          <TeamPanel backend={backend} me={me} members={members} onMembersChanged={() => { void refreshMembers(); void refreshList(); void refreshNumbers(); }} numbers={numbers} onNumbersChanged={() => { void refreshNumbers(); void refreshList(); }} onChangePassword={onChangePassword} />
         </main>
       ) : (
       <main className="min-h-0 flex-1 md:grid md:grid-cols-[minmax(320px,380px)_1fr]">
@@ -179,7 +184,7 @@ export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Pr
             conversations={convs} loadError={loadError} selectedId={selectedId} onSelect={setSelectedId}
             filter={filter} onFilter={setFilter} query={query} onQuery={setQuery} now={now}
             sortByLead={sortByLead} onSortByLead={setSortByLead}
-            members={members} canFilterByAssignee={me !== null && me.role !== 'manager'} assignee={assignee} onAssignee={setAssignee}
+            members={members} numbers={numbers} canFilterByAssignee={me !== null && me.role !== 'manager'} assignee={assignee} onAssignee={setAssignee}
           />
         </div>
         <section className={`${selectedId ? 'block' : 'hidden md:block'} h-full min-h-0`}>

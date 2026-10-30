@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { displayName, formatListTime, isUnread, memberName, STATE_LABEL } from '@/lib/format';
-import type { Conversation, ConvState, LeadLabel, Member } from '@/lib/types';
+import type { Conversation, ConvState, LeadLabel, Member, WaNumber } from '@/lib/types';
 
 export type Filter = 'all' | ConvState;
 
@@ -45,13 +45,14 @@ interface Props {
   sortByLead: boolean;
   onSortByLead: (v: boolean) => void;
   members: Member[];
+  numbers: WaNumber[];
   /** owner/director only: filter by the responsible sales manager ('all' | 'none' | user id) */
   canFilterByAssignee: boolean;
   assignee: string;
   onAssignee: (v: string) => void;
 }
 
-export function ConversationList({ conversations, loadError, selectedId, onSelect, filter, onFilter, query, onQuery, now, sortByLead, onSortByLead, members, canFilterByAssignee, assignee, onAssignee }: Props) {
+export function ConversationList({ conversations, loadError, selectedId, onSelect, filter, onFilter, query, onQuery, now, sortByLead, onSortByLead, members, numbers, canFilterByAssignee, assignee, onAssignee }: Props) {
   const all = conversations ?? [];
   const q = query.trim().toLowerCase();
   const filtered = all.filter((c) => {
@@ -144,7 +145,7 @@ export function ConversationList({ conversations, loadError, selectedId, onSelec
                       <span className={cn('truncate text-[13px]', unread ? 'text-foreground' : 'text-muted-foreground')}>{c.last_message_preview ?? '—'}</span>
                       {unread && <span className="ml-auto size-2.5 shrink-0 rounded-full bg-primary" aria-label="Непрочитано" />}
                     </span>
-                    <span className="mt-1.5 flex flex-wrap items-center gap-1.5"><Badge tone={stateTone[c.state]}>{STATE_LABEL[c.state]}</Badge><LeadBadge c={c} />{canFilterByAssignee && <span className="text-[11px] text-muted-foreground">{c.assigned_to ? `→ ${memberName(members.find((m) => m.user_id === c.assigned_to))}` : 'не назначен'}</span>}</span>
+                    <span className="mt-1.5 flex flex-wrap items-center gap-1.5"><Badge tone={stateTone[c.state]}>{STATE_LABEL[c.state]}</Badge><LeadBadge c={c} />{canFilterByAssignee && numbers.length > 1 && <span className="text-[11px] text-muted-foreground" title="Номер WhatsApp, на который написал клиент">☎ {numbers.find((n) => n.id === c.wa_number_id)?.label ?? '—'}</span>}{canFilterByAssignee && <span className="text-[11px] text-muted-foreground">{c.assigned_to ? `→ ${memberName(members.find((m) => m.user_id === c.assigned_to))}` : 'не назначен'}</span>}</span>
                   </span>
                 </button>
               </li>

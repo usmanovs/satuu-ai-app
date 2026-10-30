@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
-  ActionResult, ChangeEvent, Conversation, InboxBackend, IntegrationStatus, LinkResult, Me, Member, Message, Outcome, OutcomeResult, SendInput, SendResult, SimpleResult, StateAction, TeamStats,
+  ActionResult, ChangeEvent, Conversation, InboxBackend, IntegrationStatus, LinkResult, Me, Member, Message, NumberPatch, WaNumber, Outcome, OutcomeResult, SendInput, SendResult, SimpleResult, StateAction, TeamStats,
 } from './types';
 
 interface FnResponse { status: number; json: any }
@@ -103,6 +103,14 @@ export function createLiveBackend(supabase: SupabaseClient, functionsBaseUrl: st
         return { ok: false, error: 'Нет связи с сервером. Результат не сохранён.' };
       }
     },
+
+    async listNumbers(): Promise<WaNumber[]> {
+      const { data, error } = await supabase.from('wa_numbers').select('*').order('created_at', { ascending: true });
+      if (error) throw new Error(error.message);
+      return (data ?? []) as WaNumber[];
+    },
+    saveNumber: (numberId, patch: NumberPatch) => simple('inbox/number-save', { number_id: numberId, ...patch }),
+    addNumber: (input) => simple('inbox/number-add', input),
 
     async me(): Promise<Me> {
       const r = await callFn('inbox/me', undefined, 'GET');

@@ -67,3 +67,12 @@ The «human replies» suite calls the `inbox-selftest` and `mock-n8n` functions 
 - When a customer asks for a person, the chat is auto-assigned to the active manager with the fewest open human chats; a chat that already has a manager keeps them. With no manager yet, only owner/director see it.
 - The owner adds teammates on the dashboard's **Команда** page (email, name, role). No password is typed: the page shows a one-time invite link, the teammate opens it and sets their own password. The same page has a **Ссылка для входа** button that makes a new one-time link for a forgotten password. Each person belongs to exactly one business.
 - Verify permissions any time with `supabase/tests/rbac.sql` (rolls back everything it creates).
+
+## One WhatsApp number per salesperson, each with its own AI assistant
+- **Numbers** live in `wa_numbers` (shown on the dashboard's **Команда → Номера и AI-ассистенты**): the Cloud API `phone_number_id`, a label, the owning salesperson (a manager) and the assistant's name and style.
+- **One chat per customer per number.** The same customer writing to two salespeople gets two chats. A chat on a salesperson's number belongs to that salesperson from the first message: only they, the director and the owner see it.
+- **The assistant** answers on that number with the salesperson's settings appended to the shared rules. It always stays honest: it never claims to be the salesperson or a human, and the sales, opt-out and privacy rules always apply. Salespeople edit their own assistant; the owner and director edit all numbers and choose who owns each.
+- **Numbers without an owner** (today's shared number) behave as before: AI answers, and a chat is auto-assigned when the customer asks for a person.
+- **A new number registers itself** on its first inbound message, so the bot never drops a chat. The director then sets its owner and assistant.
+- **Connecting a real number** needs Meta (Embedded Signup, ideally coexistence). Until the App Review is approved, only the sandbox number exists.
+- Verify the rules any time with `supabase/tests/multi_number.sql` (rolls back everything it creates).

@@ -38,7 +38,7 @@ describe('conversation helpers', () => {
   const c = (over: Partial<Conversation>): Conversation => ({
     id: '1', business_id: 'b', contact_id: 'c', state: 'ai_active', state_version: 1, state_updated_at: iso(0), state_note: null,
     last_inbound_at: iso(1000), last_message_at: iso(1000), last_message_preview: 'x', manager_last_read_at: null,
-    assigned_to: null, assigned_at: null,
+    assigned_to: null, assigned_at: null, wa_number_id: 'n1',
     lead_score: null, lead_label: null, lead_reason: null, lead_scored_at: null, outcome: null, outcome_at: null,
     contacts: { wa_id: '996700000001', display_name: null }, ...over,
   });

@@ -16,6 +16,13 @@ export interface TeamStats {
   role: Role; since: string; managers: ManagerStats[];
   summary: { total: number; ai_active: number; human_requested: number; human_handling: number; unassigned: number; hot_open: number; won: number; lost: number };
 }
+export interface WaNumber {
+  id: string; phone_number_id: string; display_phone: string | null; label: string;
+  owner_user_id: string | null; assistant_name: string | null; assistant_profile: string | null; active: boolean;
+}
+export type NumberPatch = Partial<{
+  label: string; display_phone: string; owner_user_id: string | null; active: boolean; assistant_name: string; assistant_profile: string;
+}>;
 export type SimpleResult = { ok: true } | { ok: false; error: string };
 /** A one-time link the owner passes to a teammate; the teammate sets their own password through it. */
 export type LinkResult = { ok: true; link: string } | { ok: false; error: string };
@@ -35,6 +42,8 @@ export interface Conversation {
   /** The sales manager responsible for this chat; null = unassigned (only owner/director see it). */
   assigned_to: string | null;
   assigned_at: string | null;
+  /** The WhatsApp number this chat is on (one chat per customer per number). */
+  wa_number_id: string;
   /** AI estimate of buying likelihood, 0-100. An estimate, not a probability. */
   lead_score: number | null;
   lead_label: LeadLabel | null;
@@ -104,6 +113,9 @@ export interface InboxBackend {
   action(conversationId: string, action: StateAction): Promise<ActionResult>;
   setOutcome(conversationId: string, outcome: Outcome | 'open'): Promise<OutcomeResult>;
   me(): Promise<Me>;
+  listNumbers(): Promise<WaNumber[]>;
+  saveNumber(numberId: string, patch: NumberPatch): Promise<SimpleResult>;
+  addNumber(input: { phone_number_id: string; display_phone: string; label: string; owner_user_id: string | null }): Promise<SimpleResult>;
   listTeam(): Promise<Member[]>;
   teamStats(days: number): Promise<TeamStats>;
   assign(conversationId: string, userId: string | null): Promise<SimpleResult>;

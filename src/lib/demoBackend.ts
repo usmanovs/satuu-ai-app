@@ -2,7 +2,7 @@
 // It exists only to show the UI with fictional data and can never send a real message.
 import { inServiceWindow } from './format';
 import type {
-  ActionResult, ChangeEvent, Conversation, ConvState, InboxBackend, IntegrationStatus, LinkResult, Me, Member, Message, Outcome, OutcomeResult, SendInput, SendResult, SimpleResult, StateAction, TeamStats,
+  ActionResult, ChangeEvent, Conversation, ConvState, InboxBackend, IntegrationStatus, LinkResult, Me, Member, Message, NumberPatch, WaNumber, Outcome, OutcomeResult, SendInput, SendResult, SimpleResult, StateAction, TeamStats,
 } from './types';
 
 const MIN = 60_000, HOUR = 3_600_000;
@@ -14,7 +14,7 @@ function conv(id: string, wa: string, name: string | null, state: ConvState, las
     last_inbound_at: lastInboundAgo === null ? null : ago(lastInboundAgo),
     last_message_at: ago(lastInboundAgo ?? 0), last_message_preview: preview,
     manager_last_read_at: readAgo === null ? null : ago(readAgo),
-    assigned_to: null, assigned_at: null,
+    assigned_to: null, assigned_at: null, wa_number_id: 'demo-n1',
     lead_score: null, lead_label: null, lead_reason: null, lead_scored_at: null, outcome: null, outcome_at: null,
     contacts: { wa_id: wa, display_name: name },
   };
@@ -82,6 +82,10 @@ function seed(): { convs: Conversation[]; msgs: Record<string, Message[]> } {
 export function createDemoBackend(): InboxBackend {
   const data = seed();
   const convs = data.convs;
+  const numbers: WaNumber[] = [
+    { id: 'demo-n1', phone_number_id: '100000000001', display_phone: '+996 700 111 111', label: 'Азамат', owner_user_id: 'demo-azamat', assistant_name: 'Азамат AI', assistant_profile: 'Спокойный, деловой тон. Фокус: курсы с живыми занятиями.', active: true },
+    { id: 'demo-n2', phone_number_id: '100000000002', display_phone: '+996 700 222 222', label: 'Айзада', owner_user_id: 'demo-aizada', assistant_name: null, assistant_profile: null, active: true },
+  ];
   const members: Member[] = [
     { user_id: 'demo-owner', email: 'owner@demo.test', display_name: 'Владелец (демо)', role: 'owner', active: true },
     { user_id: 'demo-director', email: 'director@demo.test', display_name: 'Руслан (директор)', role: 'director', active: true },
@@ -112,6 +116,21 @@ export function createDemoBackend(): InboxBackend {
       emit({ table: 'conversations', conversationId: id });
       return { ok: true, state: c.state };
     },
+    async listNumbers(): Promise<WaNumber[]> { return numbers.map((n) => ({ ...n })); },
+    async saveNumber(id, patch: NumberPatch): Promise<SimpleResult> {
+      await sleep(300);
+      const n = numbers.find((x) => x.id === id);
+      if (!n) return { ok: false, error: 'Номер не найден.' };
+      Object.assign(n, patch);
+      emit({ table: 'conversations' });
+      return { ok: true };
+    },
+    async addNumber(input): Promise<SimpleResult> {
+      await sleep(300);
+      numbers.push({ id: `demo-n${numbers.length + 1}`, phone_number_id: input.phone_number_id, display_phone: input.display_phone || null, label: input.label || 'Номер', owner_user_id: input.owner_user_id, assistant_name: null, assistant_profile: null, active: true });
+      return { ok: true };
+    },
+
     async me(): Promise<Me> { return { user_id: 'demo-owner', role: 'owner', email: 'owner@demo.test', display_name: 'Владелец (демо)' }; },
     async listTeam(): Promise<Member[]> { return members.map((m) => ({ ...m })); },
     async teamStats(): Promise<TeamStats> {
