@@ -202,6 +202,9 @@ details p{padding:0 22px 22px;color:var(--muted);font-size:16px}
 footer{border-top:1px solid var(--line);padding:30px 0 40px;font-size:13.5px;color:var(--muted)}
 footer .wrap{display:flex;flex-direction:column;gap:8px}
 @media(min-width:760px){footer .wrap{flex-direction:row;justify-content:space-between}}
+footer .wrap{flex-wrap:wrap}
+footer .legal{flex-basis:100%}
+footer .legal a{color:inherit;text-decoration:underline}
 
 /* sticky mobile cta */
 .sticky{position:fixed;left:0;right:0;bottom:0;z-index:60;padding:10px 16px calc(10px + env(safe-area-inset-bottom));background:rgba(246,250,247,.92);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);transform:translateY(110%);transition:transform .35s}
@@ -386,6 +389,10 @@ footer .wrap{display:flex;flex-direction:column;gap:8px}
       <div class="card rv"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg></div><div><h3 data-i18n="t4_t">Оценка вероятности покупки</h3><p data-i18n="t4_d">По каждому диалогу — горячий, тёплый или холодный клиент с короткой причиной. Это оценка AI, а не гарантия. Диалоги можно отсортировать.</p></div></div>
       <div class="card rv"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5 9-10"/></svg></div><div><h3 data-i18n="t5_t">Итог по каждому клиенту</h3><p data-i18n="t5_d">Отмечайте «Купил» или «Не купит» — видно, чем заканчиваются диалоги.</p></div></div>
       <div class="card rv"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 4h4l2 5-2.500 1.500a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/></svg></div><div><h3 data-i18n="t6_t">Позвонить клиенту одним нажатием</h3><p data-i18n="t6_d">Кнопки «Позвонить» и «Открыть в WhatsApp» прямо в диалоге. Звонок идёт с телефона менеджера.</p></div></div>
+      <div class="card rv"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3v6c0 5-3.500 8-8 9-4.500-1-8-4-8-9V6z"/></svg></div><div><h3 data-i18n="t7_t">Роли и доступ</h3><p data-i18n="t7_d">Владелец, директор по продажам и менеджер. Менеджер видит только свои диалоги, чужие ему недоступны. Права проверяются на сервере, а не только в интерфейсе.</p></div></div>
+      <div class="card rv"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5"/></svg></div><div><h3 data-i18n="t8_t">Диалоги распределяются автоматически</h3><p data-i18n="t8_d">Когда клиент просит человека, диалог получает менеджер с наименьшей загрузкой. Директор может переназначить диалог в любой момент.</p></div></div>
+      <div class="card rv"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.500"/><circle cx="17" cy="9" r="2.500"/><path d="M2.500 20a6.500 6.500 0 0 1 13 0M15 14.500a5 5 0 0 1 6.500 4.500"/></svg></div><div><h3 data-i18n="t9_t">Эффективность команды</h3><p data-i18n="t9_d">Сколько диалогов в работе, как быстро отвечает каждый менеджер, сколько клиентов купили. Есть и схема команды.</p></div></div>
+      <div class="card rv"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 14a4 4 0 0 0 5.700 0l3-3a4 4 0 0 0-5.700-5.700l-1 1M14 10a4 4 0 0 0-5.700 0l-3 3a4 4 0 0 0 5.700 5.700l1-1"/></svg></div><div><h3 data-i18n="t10_t">Сотрудников добавляют по ссылке</h3><p data-i18n="t10_d">Владелец отправляет приглашение, сотрудник сам придумывает пароль. Никаких общих паролей.</p></div></div>
     </div>
     <div class="disclaimer rv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 8v5M12 16.5v.1"/></svg><span data-i18n="tm_note">Статус доставки показываем честно: «отправлено», «доставлено», «прочитано» — только после подтверждения WhatsApp.</span></div>
   </div>
@@ -439,7 +446,8 @@ footer .wrap{display:flex;flex-direction:column;gap:8px}
       <details><summary data-i18n="q3">Что будет, если ассистент не знает ответа?</summary><p data-i18n="a3">Мы настраиваем его так, чтобы он не выдумывал ответ, а сообщал, что уточнит информацию, и передавал вопрос вам или вашему сотруднику.</p></details>
       <details><summary data-i18n="q4">Может ли человек подключиться к диалогу?</summary><p data-i18n="a4">Да. Когда клиенту нужен человек, диалог можно передать вам или вашему менеджеру и продолжить в WhatsApp.</p></details>
       <details><summary data-i18n="q5">Нужны ли знания программирования?</summary><p data-i18n="a5">Нет. Ассистента настраиваем мы. От вас нужна только информация о вашем бизнесе.</p></details>
-      <details><summary data-i18n="q6">Можно ли использовать мой текущий номер WhatsApp?</summary><p data-i18n="a6">Совместимость и варианты подключения мы проверяем индивидуально до начала настройки. Мы не обещаем, что любой существующий номер можно подключить сразу — сначала обсудим вашу ситуацию.</p></details>
+      <details><summary data-i18n="q6">Можно ли использовать мой текущий номер WhatsApp?</summary><p data-i18n="a6">Часто да. Номер можно подключить так, чтобы ассистент и ваши менеджеры работали с него одновременно: менеджеры отвечают из нашей панели или из приложения WhatsApp Business, а звонки остаются в приложении. Доступность зависит от страны и проверки Meta, поэтому мы смотрим вашу ситуацию заранее и не обещаем, что любой номер подойдёт сразу.</p></details>
+      <details><summary data-i18n="q7">Поймёт ли клиент, что ему отвечает AI?</summary><p data-i18n="a7">Ассистент пишет естественно и по-человечески, но не выдаёт себя за человека. Если клиент спросит напрямую, он честно ответит, что это автоматический помощник, и предложит связаться с сотрудником.</p></details>
     </div>
   </div>
 </section>
@@ -463,6 +471,7 @@ footer .wrap{display:flex;flex-direction:column;gap:8px}
   <div class="wrap">
     <span>© Satuu AI · <span data-i18n="ft_a">Ранний доступ · Кыргызстан</span></span>
     <span data-i18n="ft_b">Satuu AI — независимый сервис, не связан с WhatsApp и Meta.</span>
+    <span class="legal"><a href="/privacy.html" data-i18n="ft_priv">Конфиденциальность</a> · <a href="/terms.html" data-i18n="ft_terms">Условия</a> · <a href="/data-deletion.html" data-i18n="ft_del">Удаление данных</a> · <a href="/about-meta-review.html" data-i18n="ft_meta">О проверке Meta</a></span>
   </div>
 </footer>
 
@@ -528,6 +537,10 @@ footer .wrap{display:flex;flex-direction:column;gap:8px}
     t4_t:'Сатып алуу ыктымалдыгын баалоо', t4_d:'Ар бир диалог боюнча — ысык, жылуу же муздак кардар жана кыска себеби. Бул AI баалоосу, кепилдик эмес. Диалогдорду иреттесе болот.',
     t5_t:'Ар бир кардар боюнча жыйынтык', t5_d:'«Сатып алды» же «Албайт» деп белгилеңиз — диалогдор эмне менен бүтөрү көрүнөт.',
     t6_t:'Кардарга бир басуу менен чалуу', t6_d:'Диалогдун өзүндө «Чалуу» жана «WhatsApp’та ачуу» баскычтары. Чалуу менеджердин телефонунан барат.',
+    t7_t:'Ролдор жана жеткиликтүүлүк', t7_d:'Ээси, сатуу директору жана менеджер. Менеджер өз диалогдорун гана көрөт, башкаларыныкы ага жеткиликтүү эмес. Укуктар интерфейсте гана эмес, серверде да текшерилет.',
+    t8_t:'Диалогдор автоматтык түрдө бөлүштүрүлөт', t8_d:'Кардар адамды сураганда, диалогду эң аз жүктөлгөн менеджер алат. Директор диалогду каалаган убакта кайра дайындай алат.',
+    t9_t:'Команданын натыйжалуулугу', t9_d:'Канча диалог иште, ар бир менеджер канчалык тез жооп берет, канча кардар сатып алды. Команданын схемасы да бар.',
+    t10_t:'Кызматкерлер шилтеме аркылуу кошулат', t10_d:'Ээси чакыруу жөнөтөт, кызматкер сырсөздү өзү ойлоп табат. Жалпы сырсөздөр жок.',
     tm_note:'Жеткирүү статусун чынчыл көрсөтөбүз: «жөнөтүлдү», «жеткирилди», «окулду» — WhatsApp ырастаганда гана.',
     for_eye:'Кимдер үчүн', for_title:'Кардарлары WhatsApp’ка жазган бизнес үчүн',
     a1_t:'Билим берүү', a1_d:'Онлайн курстар, мектептер, репетиторлор, студиялар',
@@ -544,7 +557,9 @@ footer .wrap{display:flex;flex-direction:column;gap:8px}
     q3:'Жардамчы жоопту билбесе эмне болот?', a3:'Биз аны жоопту ойлоп чыгарбай, маалыматты тактап берерин айтып, суроону сизге же кызматкериңизге өткөрүп берчү кылып ыңгайлаштырабыз.',
     q4:'Сүйлөшүүгө адам кошула алабы?', a4:'Ооба. Кардарга адам керек болгондо, сүйлөшүүнү сизге же менеджериңизге өткөрүп, WhatsApp’та уланта аласыз.',
     q5:'Программалоо билими керекпи?', a5:'Жок. Жардамчыны биз өзүбүз ыңгайлаштырабыз. Сизден бизнесиңиз жөнүндө маалымат гана керек.',
-    q6:'Учурдагы WhatsApp номеримди колдонсо болобу?', a6:'Шайкештикти жана туташтыруу варианттарын ыңгайлаштыруу башталганга чейин жеке текшеребиз. Учурдагы ар бир номерди дароо туташтырууга болот деп убада бербейбиз — алгач сиздин абалыңызды талкуулайбыз.',
+    q6:'Учурдагы WhatsApp номеримди колдонсо болобу?', a6:'Көбүнчө ооба. Номерди жардамчы да, менеджерлериңиз да бир эле учурда колдоно тургандай туташтырууга болот: менеджерлер биздин панелден же WhatsApp Business тиркемесинен жооп берет, чалуулар тиркемеде калат. Жеткиликтүүлүк өлкөгө жана Meta текшерүүсүнө жараша болот, ошондуктан абалыңызды алдын ала карап чыгабыз жана ар бир номер дароо ылайыктуу болот деп убада бербейбиз.',
+    q7:'Кардар ага AI жооп берип жатканын түшүнөбү?', a7:'Жардамчы табигый жана адамча жазат, бирок өзүн адам катары көрсөтпөйт. Кардар түз сураса, ал автоматтык жардамчы экенин чынчыл айтып, кызматкер менен байланышууну сунуштайт.',
+    ft_priv:'Купуялуулук', ft_terms:'Шарттар', ft_del:'Маалыматтарды өчүрүү', ft_meta:'Meta текшерүүсү жөнүндө',
     fin_title:'AI бизнесиңиздин кардарларына кантип жооп бере аларын көрсөтөбүз',
     fin_sub:'WhatsApp’та бизге жазыңыз — бизнесиңиздин мисалында көрсөтөбүз.',
     fin_cta:'WhatsApp’та демо алуу',
