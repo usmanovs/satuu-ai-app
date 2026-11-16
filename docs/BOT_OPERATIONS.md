@@ -45,3 +45,11 @@ Templates (category MARKETING, created through the Graph API): `followup_2_en`, 
 chosen from the customer's last message. Sending marketing templates needs a payment method on the Meta messaging
 account: if a send fails, the claim is released and a dashboard alert shows Meta's error text. Migration:
 `20261116000016_second_followup.sql`.
+
+## Instructor bio in the sales prompt
+The INSTRUCTORS paragraph (node "Build Persona", workflow 1) says Seyitbek Usmanov has worked as a tech lead at leading
+IT consulting companies in the USA (Deloitte, Accenture, GDIT) and on projects for federal agencies (USDA, CFPB, CMS);
+whenever the bot describes his background it must name both parts. It never says he works there now, never gives dates,
+titles other than tech lead or project details, and never implies endorsement. His LinkedIn
+(https://www.linkedin.com/in/seyitbek/) is shared when a customer asks who teaches or wants to verify him.
+Share link for leads: https://wa.me/84582572652
