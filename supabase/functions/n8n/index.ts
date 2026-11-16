@@ -75,6 +75,48 @@ Deno.serve(async (req) => {
         return json(result);
       }
 
+      case 'bot-alert': {
+        // n8n error workflow / watchdog / tests report a problem; shown as a banner in the dashboard.
+        const kind = reqStr(body, 'kind', 30);
+        const result = await rpc('record_bot_alert', {
+          p_business: businessId,
+          p_kind: kind,
+          p_title: reqStr(body, 'title', 200),
+          p_detail: optStr(body, 'detail', 600),
+          p_workflow: optStr(body, 'workflow', 120),
+          p_node: optStr(body, 'node', 120),
+          p_execution: optStr(body, 'execution_id', 60),
+        });
+        return json(result);
+      }
+
+      case 'watchdog': {
+        const result = await rpc('watchdog_unanswered', { p_business: businessId });
+        return json(result);
+      }
+
+      case 'pending-input': {
+        // "Answer once": is this the newest customer message, and what did they write since the last reply?
+        const result = await rpc('pending_customer_input', {
+          p_business: businessId,
+          p_wa_id: reqStr(body, 'sender_id', 64),
+          p_provider_message_id: reqStr(body, 'provider_message_id', 256),
+          p_phone_number_id: optStr(body, 'phone_number_id', 40),
+        });
+        return json(result);
+      }
+
+      case 'test-replies': {
+        const result = await rpc('test_replies', { p_business: businessId, p_wa_id: reqStr(body, 'sender_id', 64) });
+        return json(result);
+      }
+
+      case 'test-cleanup': {
+        // only ever deletes contacts whose number starts with 99900 (enforced in the database)
+        const result = await rpc('delete_test_data', { p_business: businessId });
+        return json(result);
+      }
+
       case 'need-manager': {
         // The bot flags that a sales manager should step in. The AI keeps answering; the dashboard shows the flag.
         const result = await rpc('flag_manager_needed', {

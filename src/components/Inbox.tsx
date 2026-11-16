@@ -6,7 +6,7 @@ import { ChatPanel } from '@/components/ChatPanel';
 import { ConversationList, type Filter } from '@/components/ConversationList';
 import { TeamPanel } from '@/components/TeamPanel';
 import { formatAgo, isHotAlert, isUnread, memberName, needsManager, ROLE_LABEL } from '@/lib/format';
-import type { Conversation, InboxBackend, IntegrationStatus, Me, Member, Message, Outcome, SendInput, SendResult, WaNumber } from '@/lib/types';
+import type { BotAlert, Conversation, InboxBackend, IntegrationStatus, Me, Member, Message, Outcome, SendInput, SendResult, WaNumber } from '@/lib/types';
 
 interface Props {
   backend: InboxBackend;
@@ -42,6 +42,7 @@ export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Pr
   const [outcomeError, setOutcomeError] = useState<Record<string, string>>({});
   const [integration, setIntegration] = useState<IntegrationStatus | null>(null);
   const [live, setLive] = useState<'connecting' | 'on' | 'off'>('connecting');
+  const [botAlerts, setBotAlerts] = useState<BotAlert[]>([]);
   const [pending, setPending] = useState<Record<string, 'takeover' | 'resume'>>({});
   const [actionError, setActionError] = useState<Record<string, string>>({});
   const selectedRef = useRef<string | null>(null);
@@ -68,6 +69,7 @@ export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Pr
 
   const refreshStatus = useCallback(async () => {
     try { setIntegration(await backend.integrationStatus()); } catch { setIntegration(null); }
+    try { setBotAlerts(await backend.listBotAlerts()); } catch { /* the banner just stays as it was */ }
   }, [backend]);
 
   // initial load + realtime + slow polling as a safety net
@@ -144,6 +146,21 @@ export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Pr
       {demo && (
         <div className="bg-fuchsia-700 px-3 py-1.5 text-center text-xs font-semibold text-white" role="status">
           ДЕМО · данные вымышлены · сообщения WhatsApp не отправляются
+        </div>
+      )}
+      {botAlerts.length > 0 && me?.role !== 'manager' && (
+        <div className="border-b border-red-200 bg-red-50 px-4 py-2 text-sm text-red-900" role="alert">
+          {botAlerts.map((a) => (
+            <p key={a.id} className="flex flex-wrap items-baseline gap-x-2">
+              <span aria-hidden>{a.kind === 'tests_failed' ? '🧪' : '⚠️'}</span>
+              <b>{a.title}</b>
+              {a.detail && <span className="text-red-800/90">{a.detail}</span>}
+              <span className="text-xs text-red-700/80">
+                {a.occurrences > 1 ? `${a.occurrences} раз · ` : ''}последний раз {formatAgo(a.last_seen_at, now)}
+              </span>
+            </p>
+          ))}
+          <p className="mt-0.5 text-xs text-red-700/80">Предупреждение исчезнет само: когда бот снова ответит клиенту или автотесты пройдут.</p>
         </div>
       )}
       <header className={`${selectedId ? 'hidden md:flex' : 'flex'} items-center gap-3 border-b bg-card px-4 py-2.5`}>

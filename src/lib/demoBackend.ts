@@ -200,6 +200,8 @@ export function createDemoBackend(): InboxBackend {
       setTimeout(() => { m.status = 'sent'; m.status_updated_at = new Date().toISOString(); emit({ table: 'messages', conversationId: c.id }); }, 1800);
       return { kind: 'accepted', message: structuredClone(m) };
     },
+    async listBotAlerts() { return []; },
+
     async integrationStatus(): Promise<IntegrationStatus> {
       return { send_configured: true, template_configured: true, last_ai_check_at: new Date().toISOString(), last_ingest_at: new Date().toISOString() };
     },

@@ -108,7 +108,21 @@ export interface SendInput {
 
 export type ChangeEvent = { table: 'conversations' | 'messages' | 'contacts'; conversationId?: string };
 
+export interface BotAlert {
+  id: string;
+  kind: 'error' | 'credits' | 'whatsapp_token' | 'unanswered' | 'tests_failed';
+  title: string;
+  detail: string | null;
+  workflow: string | null;
+  node: string | null;
+  occurrences: number;
+  created_at: string;
+  last_seen_at: string;
+}
+
 export interface InboxBackend {
+  /** Open problems with the bot (failed steps, no replies, failed automatic tests). */
+  listBotAlerts(): Promise<BotAlert[]>;
   mode: 'live' | 'demo';
   listConversations(): Promise<Conversation[]>;
   listMessages(conversationId: string): Promise<Message[]>;

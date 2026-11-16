@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
-  ActionResult, ChangeEvent, Conversation, InboxBackend, IntegrationStatus, LinkResult, Me, Member, Message, NumberPatch, WaNumber, Outcome, OutcomeResult, SendInput, SendResult, SimpleResult, StateAction, TeamStats,
+  ActionResult, BotAlert, ChangeEvent, Conversation, InboxBackend, IntegrationStatus, LinkResult, Me, Member, Message, NumberPatch, WaNumber, Outcome, OutcomeResult, SendInput, SendResult, SimpleResult, StateAction, TeamStats,
 } from './types';
 
 interface FnResponse { status: number; json: any }
@@ -160,6 +160,17 @@ export function createLiveBackend(supabase: SupabaseClient, functionsBaseUrl: st
       if (r.status === 202 && j?.unconfirmed) return { kind: 'unconfirmed', message: j.message };
       if (r.status === 502 && j?.message) return { kind: 'failed', message: j.message, error: j.message.error_message ?? 'Не отправлено' };
       return { kind: 'rejected', error: j?.error?.message ?? `Ошибка сервера (${r.status})`, code: j?.error?.code ?? 'error' };
+    },
+
+    async listBotAlerts() {
+      const { data, error } = await supabase
+        .from('bot_alerts')
+        .select('id, kind, title, detail, workflow, node, occurrences, created_at, last_seen_at')
+        .is('resolved_at', null)
+        .order('last_seen_at', { ascending: false })
+        .limit(5);
+      if (error) throw new Error(error.message);
+      return (data ?? []) as unknown as BotAlert[];
     },
 
     async integrationStatus(): Promise<IntegrationStatus> {
