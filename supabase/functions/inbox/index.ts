@@ -17,6 +17,13 @@ function dashboardUrl(req: Request): string {
   return origin === fallback || origin === 'http://localhost:5173' ? origin : fallback;
 }
 
+// One-time links point at our own dashboard and are used only when the person presses a button there, so link
+// previews (WhatsApp, Telegram, mail scanners) that open the URL cannot use them up.
+function setupLink(req: Request, props: { hashed_token?: string } | undefined, type: 'invite' | 'recovery'): string {
+  if (!props?.hashed_token) throw new HttpError(502, 'link_failed', 'Не удалось создать ссылку. Попробуйте ещё раз.');
+  return `${dashboardUrl(req)}/?token_hash=${encodeURIComponent(props.hashed_token)}&type=${type}`;
+}
+
 function config() {
   const url = Deno.env.get('N8N_SEND_WEBHOOK_URL') ?? '';
   const secret = Deno.env.get('N8N_SEND_WEBHOOK_SECRET') ?? '';
@@ -130,7 +137,7 @@ Deno.serve(async (req) => {
         await admin().auth.admin.deleteUser(invited.user.id); // never leave an orphan login behind
         throw e;
       }
-      return json({ user_id: invited.user.id, email: newEmail, role: newRole, link: invited.properties.action_link });
+      return json({ user_id: invited.user.id, email: newEmail, role: newRole, link: setupLink(req, invited.properties, 'invite') });
     }
 
     if (route === 'team-link') {
@@ -146,7 +153,7 @@ Deno.serve(async (req) => {
         type: 'recovery', email: m.email as string, options: { redirectTo: dashboardUrl(req) },
       });
       if (lErr || !link?.properties) throw new HttpError(502, 'link_failed', 'Не удалось создать ссылку. Попробуйте ещё раз.');
-      return json({ link: link.properties.action_link });
+      return json({ link: setupLink(req, link.properties, 'recovery') });
     }
 
     if (route === 'team-update') {

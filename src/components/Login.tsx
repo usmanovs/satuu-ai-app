@@ -4,7 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
-export function Login({ supabase }: { supabase: SupabaseClient }) {
+export function Login({ supabase, notice = null }: { supabase: SupabaseClient; notice?: string | null }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
@@ -34,6 +34,7 @@ export function Login({ supabase }: { supabase: SupabaseClient }) {
         <label className="block space-y-1.5 text-sm font-medium">Пароль
           <Input type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
         </label>
+        {notice && <p className="rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900" role="status">{notice}</p>}
         {error && <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">{error}</p>}
         <Button type="submit" className="w-full" disabled={busy}>{busy && <Loader2 className="animate-spin" />}Войти</Button>
         <p className="text-center text-xs text-muted-foreground">Регистрации нет. Доступ выдаёт владелец аккаунта.</p>

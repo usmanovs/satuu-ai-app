@@ -23,6 +23,42 @@ function Screen({ title, children }: { title: string; children: React.ReactNode 
 /** Invite and password-reset links land here with type=invite|recovery in the URL fragment. Captured before supabase-js clears it. */
 let linkNeedsPassword = typeof window !== 'undefined' && /(?:[#&?])type=(invite|recovery)\b/.test(window.location.hash + window.location.search);
 
+/**
+ * Newer links look like  /?token_hash=...&type=invite|recovery  and are only used when the person presses a button.
+ * Opening or previewing the link (for example WhatsApp fetching it to build a preview) therefore cannot use it up.
+ */
+const initialLink = (() => {
+  if (typeof window === 'undefined') return null;
+  const q = new URLSearchParams(window.location.search);
+  const tokenHash = q.get('token_hash');
+  const type = q.get('type');
+  return tokenHash && (type === 'invite' || type === 'recovery') ? { tokenHash, type } as const : null;
+})();
+
+/** Old-style links that were already used or expired come back with an error in the URL fragment. */
+const linkExpired = typeof window !== 'undefined' && /(?:[#&])error(?:_code)?=(access_denied|otp_expired)/.test(window.location.hash);
+
+function ConfirmLink({ client, link, onVerified, onSkip }: { client: SupabaseClient; link: { tokenHash: string; type: 'invite' | 'recovery' }; onVerified: () => void; onSkip: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  async function go() {
+    setBusy(true); setError(null);
+    const { error: err } = await client.auth.verifyOtp({ token_hash: link.tokenHash, type: link.type });
+    setBusy(false);
+    if (err) { setError('Ссылка уже использована или устарела. Попросите владельца создать новую.'); return; }
+    window.history.replaceState({}, '', window.location.pathname);
+    onVerified();
+  }
+  return (
+    <Screen title={link.type === 'invite' ? 'Вас пригласили в Satuu AI' : 'Сброс пароля'}>
+      <p>{link.type === 'invite' ? 'Нажмите «Продолжить», чтобы задать пароль и войти в панель.' : 'Нажмите «Продолжить», чтобы задать новый пароль.'}</p>
+      {error && <p className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-red-800" role="alert">{error}</p>}
+      <Button onClick={go} disabled={busy} className="w-full">{busy ? <Loader2 className="animate-spin" /> : null}Продолжить</Button>
+      {error && <Button variant="outline" onClick={onSkip} className="w-full">Ко входу</Button>}
+    </Screen>
+  );
+}
+
 function SetPassword({ client, onDone }: { client: SupabaseClient; onDone: () => void }) {
   const [pw, setPw] = useState('');
   const [busy, setBusy] = useState(false);
@@ -81,13 +117,23 @@ function Authenticated({ client, session }: { client: SupabaseClient; session: S
 function LiveApp({ client }: { client: SupabaseClient }) {
   const [session, setSession] = useState<Session | null | undefined>(undefined);
   const [needsPassword, setNeedsPassword] = useState(linkNeedsPassword);
+  const [pendingLink, setPendingLink] = useState(initialLink);
   useEffect(() => {
     client.auth.getSession().then(({ data }) => setSession(data.session));
     const { data } = client.auth.onAuthStateChange((e, s) => { if (e === 'PASSWORD_RECOVERY') setNeedsPassword(true); setSession(s); });
     return () => data.subscription.unsubscribe();
   }, [client]);
   if (session === undefined) return <div className="grid min-h-dvh place-items-center"><Loader2 className="size-6 animate-spin text-muted-foreground" /></div>;
-  if (!session) return <Login supabase={client} />;
+  if (pendingLink) {
+    return (
+      <ConfirmLink
+        client={client} link={pendingLink}
+        onVerified={() => { setNeedsPassword(true); setPendingLink(null); }}
+        onSkip={() => { window.history.replaceState({}, '', window.location.pathname); setPendingLink(null); }}
+      />
+    );
+  }
+  if (!session) return <Login supabase={client} notice={linkExpired ? 'Ссылка уже использована или устарела. Попросите владельца создать новую.' : null} />;
   if (needsPassword) return <SetPassword client={client} onDone={() => setNeedsPassword(false)} />;
   return <Authenticated client={client} session={session} />;
 }
