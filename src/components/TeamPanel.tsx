@@ -158,7 +158,20 @@ function MembersSection({ backend, members, onChanged }: { backend: InboxBackend
 
   async function copy() {
     if (!issued) return;
-    try { await navigator.clipboard.writeText(issued.link); setCopied(true); } catch { setError('Не удалось скопировать. Выделите ссылку и скопируйте вручную.'); }
+    // 1) the modern clipboard API (needs a secure, focused page that is allowed to use the clipboard)
+    try { await navigator.clipboard.writeText(issued.link); setCopied(true); setError(null); return; } catch { /* try the fallback */ }
+    // 2) fallback that works where the clipboard API is blocked (embedded browsers, some phones, unfocused tabs)
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = issued.link; ta.setAttribute('readonly', ''); ta.style.position = 'fixed'; ta.style.opacity = '0';
+      document.body.appendChild(ta); ta.select(); ta.setSelectionRange(0, ta.value.length);
+      const ok = document.execCommand('copy');
+      document.body.removeChild(ta);
+      if (ok) { setCopied(true); setError(null); return; }
+    } catch { /* fall through */ }
+    // 3) last resort: select the link so it can be copied by hand
+    document.querySelector<HTMLInputElement>('input[aria-label="Одноразовая ссылка"]')?.select();
+    setError('Автоматически скопировать не получилось: ссылка выделена, нажмите Ctrl+C (на телефоне: удерживайте и «Копировать»).');
   }
 
   return (
