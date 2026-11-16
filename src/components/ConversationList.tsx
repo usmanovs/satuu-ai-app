@@ -2,7 +2,7 @@ import { ArrowDownWideNarrow, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { displayName, formatListTime, isHotAlert, isUnread, memberName, needsManager, STATE_LABEL } from '@/lib/format';
+import { displayName, formatListTime, isHotAlert, isUnread, memberName, needsManager, STATE_LABEL, unreadBadge } from '@/lib/format';
 import type { Conversation, ConvState, LeadLabel, Member, WaNumber } from '@/lib/types';
 
 export type Filter = 'all' | 'needs_manager' | ConvState;
@@ -119,7 +119,20 @@ export function ConversationList({ conversations, loadError, selectedId, onSelec
 
       <div className="scroll-thin min-h-0 flex-1 overflow-y-auto">
         {loadError && <div className="m-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">Не удалось загрузить диалоги: {loadError}</div>}
-        {conversations === null && !loadError && <div className="p-6 text-center text-sm text-muted-foreground">Загрузка…</div>}
+        {conversations === null && !loadError && (
+          <ul aria-busy="true" aria-label="Загрузка диалогов">
+            {Array.from({ length: 7 }, (_, i) => (
+              <li key={i} className="flex items-start gap-3 border-b px-3 py-3">
+                <span className="skeleton mt-0.5 size-10 shrink-0 rounded-full" />
+                <span className="min-w-0 flex-1 space-y-2">
+                  <span className="flex justify-between gap-6"><span className="skeleton h-3.5 w-1/3 rounded" /><span className="skeleton h-3 w-10 rounded" /></span>
+                  <span className="skeleton block h-3 w-4/5 rounded" />
+                  <span className="skeleton block h-4 w-1/4 rounded-full" />
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
         {conversations !== null && visible.length === 0 && (
           <div className="p-8 text-center text-sm text-muted-foreground">
             {all.length === 0 ? 'Диалогов пока нет. Они появятся, когда n8n начнёт передавать входящие сообщения.' : 'Ничего не найдено.'}
@@ -147,7 +160,7 @@ export function ConversationList({ conversations, loadError, selectedId, onSelec
                     </span>
                     <span className="mt-0.5 flex items-center gap-2">
                       <span className={cn('truncate text-[13px]', unread ? 'text-foreground' : 'text-muted-foreground')}>{c.last_message_preview ?? '—'}</span>
-                      {unread && <span className="ml-auto size-2.5 shrink-0 rounded-full bg-primary" aria-label="Непрочитано" />}
+                      {unread && <span className="ml-auto grid h-5 min-w-5 shrink-0 place-items-center rounded-full bg-primary px-1.5 text-[11px] font-bold leading-none text-primary-foreground" aria-label={`Непрочитано: ${unreadBadge(c)}`}>{unreadBadge(c)}</span>}
                     </span>
                     <span className="mt-1.5 flex flex-wrap items-center gap-1.5"><Badge tone={stateTone[c.state]}>{STATE_LABEL[c.state]}</Badge>{needsManager(c) && <span className="manager-flag inline-flex items-center gap-1 rounded-full border border-violet-300 bg-violet-50 px-2 py-0.5 text-[11px] font-bold text-violet-800" title={c.manager_needed_reason ?? 'AI просит подключить менеджера'}><span className="wave" role="img" aria-label="Нужен менеджер">🙋</span>Нужен менеджер</span>}<LeadBadge c={c} />{canFilterByAssignee && numbers.length > 1 && <span className="text-[11px] text-muted-foreground" title="Номер WhatsApp, на который написал клиент">☎ {numbers.find((n) => n.id === c.wa_number_id)?.label ?? '—'}</span>}{canFilterByAssignee && c.assigned_to && <span className="text-[11px] text-muted-foreground">{`→ ${memberName(members.find((m) => m.user_id === c.assigned_to))}`}</span>}</span>
                   </span>

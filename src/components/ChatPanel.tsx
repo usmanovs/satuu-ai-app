@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Bot, Check, Hand, Loader2, MessageCircle, Phone, RotateCcw, Send, TriangleAlert, X } from 'lucide-react';
+import { ArrowLeft, Bot, Check, ChevronDown, Hand, Loader2, MessageCircle, Phone, RotateCcw, Send, TriangleAlert, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/input';
@@ -37,6 +37,7 @@ export function ChatPanel({ conv, messages, integration, demo, now, pendingActio
   const [attempt, setAttempt] = useState<Attempt | null>(null); // kept only after an ambiguous network failure
   const [notice, setNotice] = useState<Notice | null>(null);
   const [assignBusy, setAssignBusy] = useState(false);
+  const [showInfo, setShowInfo] = useState(false); // phones: lead details are collapsed by default
   const [assignError, setAssignError] = useState<string | null>(null);
   const canAssign = role !== 'manager';
   const assignee = members.find((m) => m.user_id === conv.assigned_to);
@@ -99,8 +100,8 @@ export function ChatPanel({ conv, messages, integration, demo, now, pendingActio
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-background">
-      <header className="flex items-center gap-2 border-b bg-card px-3 py-2.5">
-        <Button variant="ghost" size="icon" className="md:hidden" onClick={onBack} aria-label="Назад к списку"><ArrowLeft /></Button>
+      <header className="flex flex-wrap items-center gap-x-2 gap-y-2 border-b bg-card px-3 py-2.5">
+        <Button variant="ghost" size="sm" className="-ml-1 h-10 gap-1 px-2 md:hidden" onClick={onBack} aria-label="Назад к списку"><ArrowLeft className="size-5" /><span className="text-sm">Назад</span></Button>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <h2 className="truncate text-[15px] font-semibold">{displayName(conv)}</h2>
@@ -109,11 +110,12 @@ export function ChatPanel({ conv, messages, integration, demo, now, pendingActio
           </div>
           <p className="truncate text-xs text-muted-foreground">+{conv.contacts.wa_id}</p>
         </div>
-        <div className="flex shrink-0 gap-2">
+        <div className="flex w-full shrink-0 gap-2 sm:w-auto [&>button]:min-w-0 [&>button]:flex-1 sm:[&>button]:flex-none">
           <a
             href={`tel:+${phoneDigits}`}
             title="Позвонить клиенту с вашего телефона (номер бизнеса в WhatsApp для звонков не используется)"
-            className="inline-flex h-8 items-center gap-1.5 rounded-md border bg-background px-3 text-sm font-medium hover:bg-muted"
+            aria-label="Позвонить"
+            className="inline-flex h-10 w-10 shrink-0 items-center justify-center gap-1.5 rounded-md border bg-background text-sm font-medium hover:bg-muted sm:h-8 sm:w-auto sm:px-3"
           >
             <Phone className="size-4" /><span className="hidden sm:inline">Позвонить</span>
           </a>
@@ -125,13 +127,13 @@ export function ChatPanel({ conv, messages, integration, demo, now, pendingActio
             <MessageCircle className="size-4" /><span>Открыть в WhatsApp</span>
           </a>
           {conv.state !== 'ai_active' && (
-            <Button variant={handling ? 'default' : 'outline'} size="sm" onClick={onResume} disabled={!!pendingAction}>
+            <Button variant={handling ? 'default' : 'outline'} size="sm" className="h-10 sm:h-8" onClick={onResume} disabled={!!pendingAction}>
               {pendingAction === 'resume' ? <Loader2 className="animate-spin" /> : <Bot />}
               <span>{pendingAction === 'resume' ? 'Подтверждаем…' : 'Вернуть AI'}</span>
             </Button>
           )}
           {!handling && (
-            <Button size="sm" onClick={onTakeover} disabled={!!pendingAction}>
+            <Button size="sm" className="h-10 sm:h-8" onClick={onTakeover} disabled={!!pendingAction}>
               {pendingAction === 'takeover' ? <Loader2 className="animate-spin" /> : <Hand />}
               <span>{pendingAction === 'takeover' ? 'Подтверждаем…' : 'Взять диалог'}</span>
             </Button>
@@ -139,7 +141,20 @@ export function ChatPanel({ conv, messages, integration, demo, now, pendingActio
         </div>
       </header>
 
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 border-b bg-card px-4 py-2 text-[13px]">
+      <button
+        type="button" onClick={() => setShowInfo((v) => !v)} aria-expanded={showInfo}
+        className="flex w-full items-center gap-2 border-b bg-card px-4 py-2 text-left text-[13px] md:hidden"
+      >
+        <span className="min-w-0 flex-1 truncate text-muted-foreground">
+          {conv.lead_score !== null ? <>Оценка AI: <b className="text-foreground">{conv.lead_score}/100</b></> : 'Оценка AI: нет'}
+          {' · '}{assignee ? memberName(assignee) : canAssign ? 'не назначен' : 'вы'}
+          {conv.outcome ? ` · ${conv.outcome === 'won' ? 'купил' : 'не купит'}` : ''}
+        </span>
+        <span className="shrink-0 text-xs font-medium text-primary">Детали</span>
+        <ChevronDown className={`size-4 shrink-0 text-muted-foreground transition-transform ${showInfo ? 'rotate-180' : ''}`} />
+      </button>
+
+      <div className={`${showInfo ? 'flex' : 'hidden md:flex'} flex-wrap items-center gap-x-3 gap-y-1.5 border-b bg-card px-4 py-2 text-[13px]`}>
         <div className="flex basis-full items-center gap-2">
           <span className="text-muted-foreground">Ответственный:</span>
           {canAssign ? (
@@ -185,7 +200,7 @@ export function ChatPanel({ conv, messages, integration, demo, now, pendingActio
       </div>
 
       {(pendingAction || actionError || pauseNote || conv.state_note) && (
-        <div className="space-y-1 border-b bg-card px-4 py-2 text-[13px]">
+        <div className={`${pendingAction || actionError || showInfo ? 'block' : 'hidden md:block'} space-y-1 border-b bg-card px-4 py-2 text-[13px]`}>
           {pendingAction && <p className="flex items-center gap-2 text-amber-800"><Loader2 className="size-3.5 animate-spin" />Ожидаем подтверждения от сервера. Статус не изменён, пока он не ответит.</p>}
           {actionError && <p className="flex items-start gap-2 text-red-700"><TriangleAlert className="mt-0.5 size-3.5 shrink-0" />Не удалось выполнить действие: {actionError} Статус диалога не изменился.</p>}
           {conv.state_note && <p className="text-muted-foreground">{conv.state_note}</p>}
@@ -194,7 +209,13 @@ export function ChatPanel({ conv, messages, integration, demo, now, pendingActio
       )}
 
       <div className="scroll-thin min-h-0 flex-1 space-y-3 overflow-y-auto px-3 py-4 sm:px-6">
-        {messages === null && <p className="py-10 text-center text-sm text-muted-foreground">Загрузка переписки…</p>}
+        {messages === null && (
+          <div className="space-y-4" aria-busy="true" aria-label="Загрузка переписки">
+            {[['items-start', 'w-3/5'], ['items-end', 'w-2/3'], ['items-start', 'w-2/5'], ['items-end', 'w-1/2']].map(([a, w], i) => (
+              <div key={i} className={`flex flex-col ${a}`}><span className={`skeleton h-12 rounded-2xl ${w}`} /></div>
+            ))}
+          </div>
+        )}
         {messages !== null && list.length === 0 && !sending && <p className="py-10 text-center text-sm text-muted-foreground">Сообщений пока нет.</p>}
         {list.map((m) => {
           const t = Date.parse(m.message_timestamp);
@@ -242,16 +263,17 @@ export function ChatPanel({ conv, messages, integration, demo, now, pendingActio
           <p className="mb-1.5 text-[11px] text-muted-foreground">Свободный ответ доступен ещё {windowRemaining(conv.last_inbound_at, now)}</p>
         )}
 
-        <form className="flex items-end gap-2" onSubmit={(e) => { e.preventDefault(); void doSend(false); }}>
+        <form className="flex items-end gap-2.5" onSubmit={(e) => { e.preventDefault(); void doSend(false); }}>
           <Textarea
-            value={text} onChange={(e) => setText(e.target.value)} rows={2}
+            value={text} onChange={(e) => setText(e.target.value)} rows={3}
+            className="min-h-[5.5rem] rounded-xl px-3.5 text-base md:min-h-[4.25rem] md:text-sm"
             disabled={!!composerLock || !inWindow || !!sending}
             placeholder={composerLock ?? (inWindow ? 'Ответ клиенту от имени менеджера' : 'Окно закрыто — только шаблон')}
             aria-label="Ответ клиенту"
             maxLength={4096}
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); void doSend(false); } }}
           />
-          <Button type="submit" size="icon" disabled={!!composerLock || !inWindow || !!sending || !text.trim()} aria-label="Отправить">
+          <Button type="submit" size="icon" className="size-12 shrink-0 rounded-full md:size-10" disabled={!!composerLock || !inWindow || !!sending || !text.trim()} aria-label="Отправить">
             {sending && !sending.template ? <Loader2 className="animate-spin" /> : <Send />}
           </Button>
         </form>

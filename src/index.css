@@ -15,6 +15,8 @@
   --radius: 0.75rem;
 }
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -69,3 +71,34 @@ button:disabled { cursor: not-allowed; }
 @keyframes pop { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
 .pop { animation: pop .25s ease both; }
 @media (prefers-reduced-motion: reduce) { .pop { animation: none; } }
+
+/* Loading skeleton */
+@keyframes skeleton { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+.skeleton { display: block; background: var(--muted); animation: skeleton 1.4s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .skeleton { animation: none; } }
+
+/* Dark mode: swaps the theme tokens and the tinted status colors (red/amber/green/blue... 50-900) used across the dashboard */
+.dark {
+  color-scheme: dark;
+  --background: #0d1411;
+  --foreground: #e6efe9;
+  --card: #141d18;
+  --muted: #1c2823;
+  --muted-foreground: #92a69b;
+  --border: #27362f;
+  --primary: #19a676;
+  --primary-foreground: #04120c;
+  --accent: #163b2d;
+  --destructive: #ef6a5a;
+  --ring: #2bc08c;
+
+  --color-red-50: #3a1a18; --color-red-100: #4a2220; --color-red-200: #6b2f2b; --color-red-300: #8d3d37; --color-red-600: #f0897d; --color-red-700: #f4a197; --color-red-800: #f8b9b1; --color-red-900: #fcd3ce; --color-red-950: #fde4e1;
+  --color-amber-50: #33270f; --color-amber-100: #44330f; --color-amber-200: #66501a; --color-amber-700: #f0c25a; --color-amber-800: #f5d27e; --color-amber-900: #f9e1a6;
+  --color-emerald-100: #12382a; --color-emerald-800: #7fe0b8;
+  --color-blue-100: #172a47; --color-blue-800: #9cc2fb;
+  --color-sky-50: #112a38; --color-sky-200: #1f4a62; --color-sky-500: #4fb6ea; --color-sky-700: #7cc8f0;
+  --color-violet-50: #271d44; --color-violet-300: #5b46a0; --color-violet-800: #cdbcff;
+  --color-orange-50: #3a2412; --color-orange-300: #8a521f; --color-orange-800: #fbc18a;
+  --color-fuchsia-100: #3d1c3c; --color-fuchsia-800: #f2b4ee;
+}
+.dark .scroll-thin::-webkit-scrollbar-thumb { background: #34463d; }

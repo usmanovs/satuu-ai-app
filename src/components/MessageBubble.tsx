@@ -1,6 +1,6 @@
-import { AlertTriangle, Bot, Check, CheckCheck, Clock, ImageOff, UserRound } from 'lucide-react';
+import { AlertTriangle, Bot, Check, CheckCheck, Clock, ImageOff, Mic, UserRound } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatTime, statusView } from '@/lib/format';
+import { formatTime, splitVoice, statusView } from '@/lib/format';
 import type { Message } from '@/lib/types';
 
 const ROLE = {
@@ -17,6 +17,8 @@ export function MessageBubble({ m, now, local }: { m: Message; now: number; loca
   const toneClass =
     sv?.tone === 'error' ? 'text-red-600' : sv?.tone === 'warn' ? 'text-amber-700' : sv?.tone === 'read' ? 'text-sky-500' : onDark ? 'text-white/80' : 'text-muted-foreground';
   const failed = m.status === 'failed';
+  const voice = m.message_type === 'audio' || m.message_type === 'voice';
+  const transcript = voice ? splitVoice(m.body).transcript : null;
 
   return (
     <div className={cn('pop flex flex-col gap-1', r.wrap)}>
@@ -24,8 +26,22 @@ export function MessageBubble({ m, now, local }: { m: Message; now: number; loca
         <r.Icon className="size-3" /> {r.label}
       </span>
       <div className={cn('max-w-[85%] rounded-2xl px-3.5 py-2 text-[14.5px] shadow-sm sm:max-w-[72%]', r.bubble, failed && 'border-red-300 bg-red-50 text-red-950')}>
-        {m.is_placeholder && <ImageOff className="mr-1.5 mb-0.5 inline size-4 opacity-60" aria-hidden />}
-        <span className={cn('whitespace-pre-wrap break-words', m.is_placeholder && 'italic opacity-80')}>{m.body}</span>
+        {voice ? (
+          <div className="space-y-1.5">
+            <span className="flex items-center gap-2 font-medium">
+              <span className="grid size-7 place-items-center rounded-full bg-black/10"><Mic className="size-4" aria-hidden /></span>
+              Голосовое сообщение
+            </span>
+            {transcript
+              ? <p className="whitespace-pre-wrap break-words border-t border-current/15 pt-1.5"><span className="mr-1 text-[11px] font-semibold uppercase tracking-wide opacity-60">Текст</span>{transcript}</p>
+              : <p className="border-t border-current/15 pt-1.5 text-[13px] italic opacity-70">Текст не распознан. Прослушайте запись в WhatsApp.</p>}
+          </div>
+        ) : (
+          <>
+            {m.is_placeholder && <ImageOff className="mr-1.5 mb-0.5 inline size-4 opacity-60" aria-hidden />}
+            <span className={cn('whitespace-pre-wrap break-words', m.is_placeholder && 'italic opacity-80')}>{m.body}</span>
+          </>
+        )}
         <span className={cn('mt-1 flex items-center justify-end gap-1.5 text-[11px]', failed ? 'text-red-600' : toneClass)}>
           <span>{formatTime(m.message_timestamp)}</span>
           {outbound && sv && (

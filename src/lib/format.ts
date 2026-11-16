@@ -34,6 +34,34 @@ export function isUnread(c: Conversation): boolean {
   return Date.parse(c.last_inbound_at) > Date.parse(c.manager_last_read_at);
 }
 
+/** Number shown on the unread badge: the real count when the backend knows it, otherwise at least 1. */
+export function unreadBadge(c: Conversation): number {
+  if (!isUnread(c)) return 0;
+  return Math.max(1, c.unread_count ?? 1);
+}
+
+/** Counts customer messages newer than the manager's last read time, per conversation. */
+export function countUnread(
+  convs: Pick<Conversation, 'id' | 'manager_last_read_at'>[],
+  inbound: { conversation_id: string; message_timestamp: string }[],
+): Map<string, number> {
+  const readAt = new Map(convs.map((c) => [c.id, c.manager_last_read_at ? Date.parse(c.manager_last_read_at) : 0]));
+  const counts = new Map<string, number>();
+  for (const m of inbound) {
+    const r = readAt.get(m.conversation_id);
+    if (r === undefined || Date.parse(m.message_timestamp) <= r) continue;
+    counts.set(m.conversation_id, (counts.get(m.conversation_id) ?? 0) + 1);
+  }
+  return counts;
+}
+
+/** Voice notes arrive as a placeholder line, then the transcript after a microphone emoji (when it was recognised). */
+export function splitVoice(body: string): { transcript: string | null } {
+  const i = body.indexOf('🎤');
+  const t = i >= 0 ? body.slice(i + 2).trim() : '';
+  return { transcript: t || null };
+}
+
 /** WhatsApp customer-service window: free-form replies only within 24h of the customer's last message. */
 export function inServiceWindow(lastInboundAt: string | null, now: number = Date.now()): boolean {
   if (!lastInboundAt) return false;
@@ -59,9 +87,11 @@ export function sameDay(a: number, b: number): boolean {
 export function formatTime(iso: string): string {
   return timeFmt.format(new Date(iso));
 }
+/** Chat list time: "только что", "5 мин назад", "3 ч назад" for the last 24 hours, then the date. */
 export function formatListTime(iso: string | null, now: number = Date.now()): string {
   if (!iso) return '';
   const t = Date.parse(iso);
+  if (now - t < 86_400_000 && now >= t - 60_000) return formatAgo(iso, now);
   return sameDay(t, now) ? timeFmt.format(t) : dateTimeFmt.format(t).replace(',', '');
 }
 export function formatDay(iso: string, now: number = Date.now()): string {

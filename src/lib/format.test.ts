@@ -52,3 +52,26 @@ describe('conversation helpers', () => {
     expect(displayName(c({ contacts: { wa_id: '1', display_name: ' Айбек ' } }))).toBe('Айбек');
   });
 });
+
+describe('list time and unread counts', () => {
+  test('recent chats show relative time, older ones the date', async () => {
+    const { formatListTime } = await import('./format');
+    expect(formatListTime(iso(20_000), now)).toBe('только что');
+    expect(formatListTime(iso(5 * 60_000), now)).toBe('5 мин назад');
+    expect(formatListTime(iso(3 * H), now)).toBe('3 ч назад');
+    expect(formatListTime(null, now)).toBe('');
+  });
+  test('counts only customer messages newer than the last read time', async () => {
+    const { countUnread, splitVoice } = await import('./format');
+    const m = (id: string, agoMs: number) => ({ conversation_id: id, message_timestamp: iso(agoMs) });
+    const counts = countUnread(
+      [{ id: 'a', manager_last_read_at: iso(2 * H) }, { id: 'b', manager_last_read_at: null }],
+      [m('a', 3 * H), m('a', H), m('a', 60_000), m('b', H), m('zzz', H)],
+    );
+    expect(counts.get('a')).toBe(2);
+    expect(counts.get('b')).toBe(1);
+    expect(counts.has('zzz')).toBe(false);
+    expect(splitVoice('[Голосовое сообщение]\n🎤 Привет').transcript).toBe('Привет');
+    expect(splitVoice('[Голосовое сообщение]').transcript).toBeNull();
+  });
+});

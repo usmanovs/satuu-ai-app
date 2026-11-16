@@ -1,6 +1,6 @@
 // DEMO BACKEND. Entirely in memory: no network calls, no Supabase, no WhatsApp.
 // It exists only to show the UI with fictional data and can never send a real message.
-import { inServiceWindow } from './format';
+import { countUnread, inServiceWindow } from './format';
 import type {
   ActionResult, ChangeEvent, Conversation, ConvState, InboxBackend, IntegrationStatus, LinkResult, Me, Member, Message, NumberPatch, WaNumber, Outcome, OutcomeResult, SendInput, SendResult, SimpleResult, StateAction, TeamStats,
 } from './types';
@@ -101,7 +101,10 @@ export function createDemoBackend(): InboxBackend {
 
   return {
     mode: 'demo',
-    async listConversations() { return structuredClone(sorted()); },
+    async listConversations() {
+      const counts = countUnread(data.convs, Object.values(data.msgs).flat().filter((m) => m.direction === 'inbound'));
+      return structuredClone(sorted().map((c) => ({ ...c, unread_count: counts.get(c.id) ?? 0 })));
+    },
     async listMessages(id) { return structuredClone(data.msgs[id] ?? []); },
     subscribe(onChange, onStatus) {
       listeners.add(onChange); onStatus('on');

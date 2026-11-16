@@ -2,6 +2,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
   ActionResult, BotAlert, ChangeEvent, Conversation, InboxBackend, IntegrationStatus, LinkResult, Me, Member, Message, NumberPatch, WaNumber, Outcome, OutcomeResult, SendInput, SendResult, SimpleResult, StateAction, TeamStats,
 } from './types';
+import { countUnread } from './format';
 
 interface FnResponse { status: number; json: any }
 
@@ -55,7 +56,20 @@ export function createLiveBackend(supabase: SupabaseClient, functionsBaseUrl: st
         .limit(200);
       if (error) throw new Error(error.message);
       // chats created by the automatic regression tests (numbers 99900...) are never shown
-      return ((data ?? []) as unknown as Conversation[]).filter((c) => !c.contacts?.wa_id?.startsWith('99900'));
+      const convs = ((data ?? []) as unknown as Conversation[]).filter((c) => !c.contacts?.wa_id?.startsWith('99900'));
+      // unread badge numbers: customer messages newer than the manager's last read time (best effort; the list works without them)
+      try {
+        const since = new Date(Date.now() - 30 * 86_400_000).toISOString();
+        const { data: inbound } = await supabase
+          .from('messages')
+          .select('conversation_id, message_timestamp')
+          .eq('direction', 'inbound').eq('is_placeholder', false).gte('message_timestamp', since)
+          .order('message_timestamp', { ascending: false })
+          .limit(2000);
+        const counts = countUnread(convs, (inbound ?? []) as { conversation_id: string; message_timestamp: string }[]);
+        for (const c of convs) c.unread_count = counts.get(c.id) ?? 0;
+      } catch { /* badges fall back to a single unread marker */ }
+      return convs;
     },
 
     async listMessages(conversationId) {

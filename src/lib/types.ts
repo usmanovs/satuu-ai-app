@@ -56,6 +56,8 @@ export interface Conversation {
   outcome: Outcome | null;
   outcome_at: string | null;
   contacts: { wa_id: string; display_name: string | null };
+  /** How many customer messages arrived since the manager last opened the chat (filled by the backend). */
+  unread_count?: number;
 }
 
 export interface Message {

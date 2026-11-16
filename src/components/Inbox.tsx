@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { LogOut, MessageSquareText, Radio, Unplug, Users } from 'lucide-react';
+import { LogOut, MessageSquareText, Moon, Radio, Sun, Unplug, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ChatPanel } from '@/components/ChatPanel';
@@ -21,11 +21,26 @@ function useNow(ms: number) {
   return now;
 }
 
+type Theme = 'light' | 'dark';
+function useTheme(): [Theme, () => void] {
+  const [theme, setTheme] = useState<Theme>(() => (document.documentElement.classList.contains('dark') ? 'dark' : 'light'));
+  const toggle = useCallback(() => {
+    setTheme((t) => {
+      const next: Theme = t === 'dark' ? 'light' : 'dark';
+      document.documentElement.classList.toggle('dark', next === 'dark');
+      try { localStorage.setItem('theme', next); } catch { /* private mode: the choice just is not remembered */ }
+      return next;
+    });
+  }, []);
+  return [theme, toggle];
+}
+
 const errText = (e: unknown) => (e instanceof Error ? e.message : 'неизвестная ошибка');
 
 export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Props) {
   const demo = backend.mode === 'demo';
   const now = useNow(15_000);
+  const [theme, toggleTheme] = useTheme();
   const [convs, setConvs] = useState<Conversation[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -90,6 +105,21 @@ export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Pr
     const poll = setInterval(() => { void refreshList(); void refreshStatus(); if (selectedRef.current) void refreshMessages(selectedRef.current); }, 30_000);
     return () => { unsubscribe(); clearInterval(poll); clearTimeout(timer); };
   }, [backend, refreshList, refreshMembers, refreshNumbers, refreshMessages, refreshStatus]);
+
+  // phones: opening a chat adds a history step, so the system Back gesture returns to the list instead of leaving the app
+  useEffect(() => {
+    if (selectedId) {
+      if (window.history.state?.chat !== selectedId) window.history.pushState({ chat: selectedId }, '');
+    }
+  }, [selectedId]);
+  useEffect(() => {
+    const onPop = () => setSelectedId(null);
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+  const closeChat = useCallback(() => {
+    if (window.history.state?.chat) window.history.back(); else setSelectedId(null);
+  }, []);
 
   const selected = useMemo(() => convs?.find((c) => c.id === selectedId) ?? null, [convs, selectedId]);
 
@@ -208,6 +238,9 @@ export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Pr
               </Button>
             </>
           )}
+          <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'} title={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}>
+            {theme === 'dark' ? <Sun /> : <Moon />}
+          </Button>
           {onSignOut && <Button variant="ghost" size="sm" onClick={onSignOut}><LogOut />Выйти</Button>}
         </div>
       </header>
@@ -238,7 +271,7 @@ export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Pr
               role={me?.role ?? 'manager'} members={members} onAssign={(u) => assignTo(selected.id, u)}
               onOutcome={(o) => runOutcome(selected.id, o)}
               outcomeBusy={outcomeBusy === selected.id} outcomeError={outcomeError[selected.id]}
-              onBack={() => setSelectedId(null)}
+              onBack={closeChat}
             />
           ) : (
             <div className="hidden h-full place-items-center text-center text-muted-foreground md:grid">
