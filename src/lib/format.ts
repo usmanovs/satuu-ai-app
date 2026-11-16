@@ -21,6 +21,13 @@ export function isHotAlert(c: Conversation): boolean {
   return !c.outcome && c.lead_score !== null && c.lead_score >= HOT_ALERT_SCORE;
 }
 
+/** The bot asked for a sales manager and no manager has opened the chat since. */
+export function needsManager(c: Conversation): boolean {
+  if (!c.manager_needed_at || c.outcome) return false;
+  if (!c.manager_last_read_at) return true;
+  return Date.parse(c.manager_last_read_at) < Date.parse(c.manager_needed_at);
+}
+
 export function isUnread(c: Conversation): boolean {
   if (!c.last_inbound_at) return false;
   if (!c.manager_last_read_at) return true;

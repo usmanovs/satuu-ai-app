@@ -1,6 +1,6 @@
 // n8n -> Supabase contracts. Auth: `Authorization: Bearer <integration key>`.
 // Routes (POST): /ingest-message, /ingest-echo, /lead-context, /lead-score, /ai-permission, /request-human,
-// /claim-human-send, /record-outbound, /message-status, /followup-candidates, /followup-claim
+// /claim-human-send, /record-outbound, /message-status, /followup-candidates, /followup-claim, /need-manager
 import {
   errorResponse, HttpError, json, preflight, readJson, requireIntegration, rpc,
 } from '../_shared/lib.ts';
@@ -69,6 +69,17 @@ Deno.serve(async (req) => {
           p_business: businessId,
           p_wa_id: reqStr(body, 'sender_id', 64),
           p_score: Math.round(score),
+          p_reason: optStr(body, 'reason', 200),
+          p_phone_number_id: optStr(body, 'phone_number_id', 40),
+        });
+        return json(result);
+      }
+
+      case 'need-manager': {
+        // The bot flags that a sales manager should step in. The AI keeps answering; the dashboard shows the flag.
+        const result = await rpc('flag_manager_needed', {
+          p_business: businessId,
+          p_wa_id: reqStr(body, 'sender_id', 64),
           p_reason: optStr(body, 'reason', 200),
           p_phone_number_id: optStr(body, 'phone_number_id', 40),
         });

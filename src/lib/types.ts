@@ -39,6 +39,9 @@ export interface Conversation {
   last_message_at: string | null;
   last_message_preview: string | null;
   manager_last_read_at: string | null;
+  /** Set by the bot when a sales manager should step in; shown until a manager opens the chat. */
+  manager_needed_at: string | null;
+  manager_needed_reason: string | null;
   /** The sales manager responsible for this chat; null = unassigned (only owner/director see it). */
   assigned_to: string | null;
   assigned_at: string | null;

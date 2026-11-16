@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ChatPanel } from '@/components/ChatPanel';
 import { ConversationList, type Filter } from '@/components/ConversationList';
 import { TeamPanel } from '@/components/TeamPanel';
-import { formatAgo, isHotAlert, isUnread, memberName, ROLE_LABEL } from '@/lib/format';
+import { formatAgo, isHotAlert, isUnread, memberName, needsManager, ROLE_LABEL } from '@/lib/format';
 import type { Conversation, InboxBackend, IntegrationStatus, Me, Member, Message, Outcome, SendInput, SendResult, WaNumber } from '@/lib/types';
 
 interface Props {
@@ -98,7 +98,7 @@ export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Pr
     void refreshMessages(selectedId);
   }, [selectedId, refreshMessages]);
 
-  const needsRead = selected ? isUnread(selected) : false;
+  const needsRead = selected ? isUnread(selected) || needsManager(selected) : false;
   useEffect(() => {
     if (selectedId && needsRead) void backend.action(selectedId, 'mark_read').then(refreshList);
   }, [selectedId, needsRead, backend, refreshList]);
@@ -136,6 +136,7 @@ export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Pr
 
   const unreadCount = (convs ?? []).filter(isUnread).length;
   const hotCount = (convs ?? []).filter(isHotAlert).length;
+  const managerCount = (convs ?? []).filter(needsManager).length;
   const aiChecked = integration?.last_ai_check_at ?? null;
 
   return (
@@ -152,6 +153,16 @@ export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Pr
           <p className="truncate text-xs text-muted-foreground">{businessName ?? 'Демо-бизнес'}{unreadCount > 0 && ` · непрочитано: ${unreadCount}`}</p>
         </div>
         <div className="ml-auto flex items-center gap-2">
+          {managerCount > 0 && (
+            <button
+              onClick={() => { setFilter('needs_manager'); setView('inbox'); setSelectedId(null); }}
+              title="AI просит подключить менеджера: нажмите, чтобы показать такие диалоги"
+              className="manager-pill inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-violet-300 bg-violet-50 px-2.5 py-1 text-xs font-bold text-violet-800"
+            >
+              <span className="wave text-sm" role="img" aria-label="Нужен менеджер">🙋</span>
+              {managerCount}<span className="hidden lg:inline"> {managerCount === 1 ? 'нужен менеджер' : 'нужны менеджеру'}</span>
+            </button>
+          )}
           {hotCount > 0 && (
             <button
               onClick={() => { setSortByLead(true); setView('inbox'); setSelectedId(null); }}

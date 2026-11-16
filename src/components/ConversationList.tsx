@@ -2,13 +2,14 @@ import { ArrowDownWideNarrow, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { displayName, formatListTime, isHotAlert, isUnread, memberName, STATE_LABEL } from '@/lib/format';
+import { displayName, formatListTime, isHotAlert, isUnread, memberName, needsManager, STATE_LABEL } from '@/lib/format';
 import type { Conversation, ConvState, LeadLabel, Member, WaNumber } from '@/lib/types';
 
-export type Filter = 'all' | ConvState;
+export type Filter = 'all' | 'needs_manager' | ConvState;
 
 const FILTERS: { id: Filter; label: string }[] = [
   { id: 'all', label: 'Все' },
+  { id: 'needs_manager', label: '🙋 Нужен менеджер' },
   { id: 'ai_active', label: 'AI активен' },
   { id: 'human_requested', label: 'Нужен человек' },
   { id: 'human_handling', label: 'У менеджера' },
@@ -56,7 +57,7 @@ export function ConversationList({ conversations, loadError, selectedId, onSelec
   const all = conversations ?? [];
   const q = query.trim().toLowerCase();
   const filtered = all.filter((c) => {
-    if (filter !== 'all' && c.state !== filter) return false;
+    if (filter === 'needs_manager' ? !needsManager(c) : filter !== 'all' && c.state !== filter) return false;
     if (assignee === 'none' && c.assigned_to) return false;
     if (assignee !== 'all' && assignee !== 'none' && c.assigned_to !== assignee) return false;
     if (!q) return true;
@@ -67,9 +68,9 @@ export function ConversationList({ conversations, loadError, selectedId, onSelec
     );
   });
   // open leads with the highest buying signal first; finished chats (won/lost) and unscored ones go last
-  const rank = (c: Conversation) => (c.outcome ? -2 : c.lead_score ?? -1);
+  const rank = (c: Conversation) => (c.outcome ? -2 : (needsManager(c) ? 1000 : 0) + (c.lead_score ?? -1));
   const visible = sortByLead ? [...filtered].sort((a, b) => rank(b) - rank(a)) : filtered;
-  const count = (f: Filter) => (f === 'all' ? all.length : all.filter((c) => c.state === f).length);
+  const count = (f: Filter) => (f === 'all' ? all.length : f === 'needs_manager' ? all.filter(needsManager).length : all.filter((c) => c.state === f).length);
 
   return (
     <div className="flex h-full min-h-0 flex-col border-r bg-card">
@@ -148,7 +149,7 @@ export function ConversationList({ conversations, loadError, selectedId, onSelec
                       <span className={cn('truncate text-[13px]', unread ? 'text-foreground' : 'text-muted-foreground')}>{c.last_message_preview ?? '—'}</span>
                       {unread && <span className="ml-auto size-2.5 shrink-0 rounded-full bg-primary" aria-label="Непрочитано" />}
                     </span>
-                    <span className="mt-1.5 flex flex-wrap items-center gap-1.5"><Badge tone={stateTone[c.state]}>{STATE_LABEL[c.state]}</Badge><LeadBadge c={c} />{canFilterByAssignee && numbers.length > 1 && <span className="text-[11px] text-muted-foreground" title="Номер WhatsApp, на который написал клиент">☎ {numbers.find((n) => n.id === c.wa_number_id)?.label ?? '—'}</span>}{canFilterByAssignee && <span className="text-[11px] text-muted-foreground">{c.assigned_to ? `→ ${memberName(members.find((m) => m.user_id === c.assigned_to))}` : 'не назначен'}</span>}</span>
+                    <span className="mt-1.5 flex flex-wrap items-center gap-1.5"><Badge tone={stateTone[c.state]}>{STATE_LABEL[c.state]}</Badge>{needsManager(c) && <span className="manager-flag inline-flex items-center gap-1 rounded-full border border-violet-300 bg-violet-50 px-2 py-0.5 text-[11px] font-bold text-violet-800" title={c.manager_needed_reason ?? 'AI просит подключить менеджера'}><span className="wave" role="img" aria-label="Нужен менеджер">🙋</span>Нужен менеджер</span>}<LeadBadge c={c} />{canFilterByAssignee && numbers.length > 1 && <span className="text-[11px] text-muted-foreground" title="Номер WhatsApp, на который написал клиент">☎ {numbers.find((n) => n.id === c.wa_number_id)?.label ?? '—'}</span>}{canFilterByAssignee && <span className="text-[11px] text-muted-foreground">{c.assigned_to ? `→ ${memberName(members.find((m) => m.user_id === c.assigned_to))}` : 'не назначен'}</span>}</span>
                   </span>
                 </button>
               </li>

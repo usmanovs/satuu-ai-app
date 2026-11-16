@@ -14,6 +14,7 @@ function conv(id: string, wa: string, name: string | null, state: ConvState, las
     last_inbound_at: lastInboundAgo === null ? null : ago(lastInboundAgo),
     last_message_at: ago(lastInboundAgo ?? 0), last_message_preview: preview,
     manager_last_read_at: readAgo === null ? null : ago(readAgo),
+    manager_needed_at: null, manager_needed_reason: null,
     assigned_to: null, assigned_at: null, wa_number_id: 'demo-n1',
     lead_score: null, lead_label: null, lead_reason: null, lead_scored_at: null, outcome: null, outcome_at: null,
     contacts: { wa_id: wa, display_name: name },
