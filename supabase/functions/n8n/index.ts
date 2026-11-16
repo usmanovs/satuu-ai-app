@@ -128,6 +128,29 @@ Deno.serve(async (req) => {
         return json(result);
       }
 
+      case 'followup2-candidates': {
+        // Warm leads quiet for 3-7 days (outside the free window): candidates for one approved template message.
+        const limit = Number.isInteger(body.limit) ? (body.limit as number) : 10;
+        const result = await rpc('get_followup2_candidates', { p_business: businessId, p_limit: limit });
+        return json(result);
+      }
+
+      case 'followup2-claim': {
+        const result = await rpc('followup2_claim', {
+          p_business: businessId,
+          p_conversation: reqStr(body, 'conversation_id', 64),
+        });
+        return json(result);
+      }
+
+      case 'followup2-release': {
+        const result = await rpc('followup2_release', {
+          p_business: businessId,
+          p_conversation: reqStr(body, 'conversation_id', 64),
+        });
+        return json(result);
+      }
+
       case 'followup-candidates': {
         // Quiet leads still inside the 24 h window that have not been nudged yet. Read-only.
         const limit = Number.isInteger(body.limit) ? (body.limit as number) : 20;
