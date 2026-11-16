@@ -54,7 +54,8 @@ export function createLiveBackend(supabase: SupabaseClient, functionsBaseUrl: st
         .order('last_message_at', { ascending: false, nullsFirst: false })
         .limit(200);
       if (error) throw new Error(error.message);
-      return (data ?? []) as unknown as Conversation[];
+      // chats created by the automatic regression tests (numbers 99900...) are never shown
+      return ((data ?? []) as unknown as Conversation[]).filter((c) => !c.contacts?.wa_id?.startsWith('99900'));
     },
 
     async listMessages(conversationId) {
