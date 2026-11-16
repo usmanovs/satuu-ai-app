@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ChatPanel } from '@/components/ChatPanel';
 import { ConversationList, type Filter } from '@/components/ConversationList';
 import { TeamPanel } from '@/components/TeamPanel';
-import { formatAgo, isUnread, memberName, ROLE_LABEL } from '@/lib/format';
+import { formatAgo, isHotAlert, isUnread, memberName, ROLE_LABEL } from '@/lib/format';
 import type { Conversation, InboxBackend, IntegrationStatus, Me, Member, Message, Outcome, SendInput, SendResult, WaNumber } from '@/lib/types';
 
 interface Props {
@@ -135,6 +135,7 @@ export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Pr
   }
 
   const unreadCount = (convs ?? []).filter(isUnread).length;
+  const hotCount = (convs ?? []).filter(isHotAlert).length;
   const aiChecked = integration?.last_ai_check_at ?? null;
 
   return (
@@ -151,6 +152,16 @@ export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Pr
           <p className="truncate text-xs text-muted-foreground">{businessName ?? 'Демо-бизнес'}{unreadCount > 0 && ` · непрочитано: ${unreadCount}`}</p>
         </div>
         <div className="ml-auto flex items-center gap-2">
+          {hotCount > 0 && (
+            <button
+              onClick={() => { setSortByLead(true); setView('inbox'); setSelectedId(null); }}
+              title="Горячие лиды готовы купить: нажмите, чтобы показать их первыми"
+              className="fire-pill inline-flex items-center gap-1.5 rounded-full border border-orange-300 bg-orange-50 px-2.5 py-1 text-xs font-bold text-orange-800"
+            >
+              <span className="fire text-sm" role="img" aria-label="Горячие лиды">🔥</span>
+              {hotCount} {hotCount === 1 ? 'горячий лид' : 'горячих'}
+            </button>
+          )}
           {!demo && (
             <>
               <Badge tone={live === 'on' ? 'emerald' : 'amber'} title="Обновления в реальном времени">

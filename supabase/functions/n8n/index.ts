@@ -1,6 +1,6 @@
 // n8n -> Supabase contracts. Auth: `Authorization: Bearer <integration key>`.
 // Routes (POST): /ingest-message, /ingest-echo, /lead-context, /lead-score, /ai-permission, /request-human,
-// /claim-human-send, /record-outbound, /message-status
+// /claim-human-send, /record-outbound, /message-status, /followup-candidates, /followup-claim
 import {
   errorResponse, HttpError, json, preflight, readJson, requireIntegration, rpc,
 } from '../_shared/lib.ts';
@@ -71,6 +71,22 @@ Deno.serve(async (req) => {
           p_score: Math.round(score),
           p_reason: optStr(body, 'reason', 200),
           p_phone_number_id: optStr(body, 'phone_number_id', 40),
+        });
+        return json(result);
+      }
+
+      case 'followup-candidates': {
+        // Quiet leads still inside the 24 h window that have not been nudged yet. Read-only.
+        const limit = Number.isInteger(body.limit) ? (body.limit as number) : 20;
+        const result = await rpc('get_followup_candidates', { p_business: businessId, p_limit: limit });
+        return json(result);
+      }
+
+      case 'followup-claim': {
+        // Atomic once-only claim before a nudge is sent.
+        const result = await rpc('followup_claim', {
+          p_business: businessId,
+          p_conversation: reqStr(body, 'conversation_id', 64),
         });
         return json(result);
       }

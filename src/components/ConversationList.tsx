@@ -2,7 +2,7 @@ import { ArrowDownWideNarrow, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { displayName, formatListTime, isUnread, memberName, STATE_LABEL } from '@/lib/format';
+import { displayName, formatListTime, isHotAlert, isUnread, memberName, STATE_LABEL } from '@/lib/format';
 import type { Conversation, ConvState, LeadLabel, Member, WaNumber } from '@/lib/types';
 
 export type Filter = 'all' | ConvState;
@@ -138,7 +138,10 @@ export function ConversationList({ conversations, loadError, selectedId, onSelec
                   <span className="mt-0.5 grid size-10 shrink-0 place-items-center rounded-full bg-muted text-sm font-semibold text-muted-foreground">{initials(name)}</span>
                   <span className="min-w-0 flex-1">
                     <span className="flex items-baseline justify-between gap-2">
-                      <span className={cn('truncate text-[15px]', unread ? 'font-bold' : 'font-medium')}>{name}</span>
+                      <span className={cn('flex min-w-0 items-center gap-1.5 text-[15px]', unread ? 'font-bold' : 'font-medium')}>
+                        <span className="truncate">{name}</span>
+                        {isHotAlert(c) && <span className="fire shrink-0 text-base" role="img" aria-label="Горячий лид" title={`Горячий лид · ${c.lead_score}/100${c.lead_reason ? ` — ${c.lead_reason}` : ''}`}>🔥</span>}
+                      </span>
                       <span className={cn('shrink-0 text-xs', unread ? 'font-semibold text-primary' : 'text-muted-foreground')}>{formatListTime(c.last_message_at, now)}</span>
                     </span>
                     <span className="mt-0.5 flex items-center gap-2">

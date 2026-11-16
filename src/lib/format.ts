@@ -15,6 +15,12 @@ export function displayName(c: Pick<Conversation, 'contacts'>): string {
   return n || `+${c.contacts.wa_id}`;
 }
 
+/** A lead that is ready to buy and still open: shown with the glowing fire. Matches the 80+ alert threshold. */
+export const HOT_ALERT_SCORE = 80;
+export function isHotAlert(c: Conversation): boolean {
+  return !c.outcome && c.lead_score !== null && c.lead_score >= HOT_ALERT_SCORE;
+}
+
 export function isUnread(c: Conversation): boolean {
   if (!c.last_inbound_at) return false;
   if (!c.manager_last_read_at) return true;
