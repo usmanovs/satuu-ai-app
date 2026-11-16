@@ -156,10 +156,10 @@ export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Pr
             <button
               onClick={() => { setSortByLead(true); setView('inbox'); setSelectedId(null); }}
               title="Горячие лиды готовы купить: нажмите, чтобы показать их первыми"
-              className="fire-pill inline-flex items-center gap-1.5 rounded-full border border-orange-300 bg-orange-50 px-2.5 py-1 text-xs font-bold text-orange-800"
+              className="fire-pill inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-orange-300 bg-orange-50 px-2.5 py-1 text-xs font-bold text-orange-800"
             >
               <span className="fire text-sm" role="img" aria-label="Горячие лиды">🔥</span>
-              {hotCount} {hotCount === 1 ? 'горячий лид' : 'горячих'}
+              {hotCount}<span className="hidden lg:inline"> {hotCount === 1 ? 'горячий лид' : 'горячих'}</span>
             </button>
           )}
           {!demo && (
