@@ -15,6 +15,7 @@ function textOf(m) {
   if (m.type === 'text') return m.text?.body ?? null;
   if (m.type === 'button') return m.button?.text ?? null;
   if (m.type === 'interactive') return m.interactive?.button_reply?.title ?? m.interactive?.list_reply?.title ?? null;
+  if (m.type === 'reaction' && typeof m.reaction?.emoji === 'string' && m.reaction.emoji) return m.reaction.emoji; // shown under the placeholder
   return m[m.type]?.caption ?? null; // image/video/document caption, otherwise null
 }
 
