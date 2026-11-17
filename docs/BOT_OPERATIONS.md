@@ -129,3 +129,6 @@ which saves it in the private storage bucket `chat-media` (max 25 MB; path busin
 a video player or a document download card (signed links valid for 1 hour; a manager can open a file only if they can see the chat). The assistant still does not understand the content of videos or photos.
 Failures in this branch are ignored (continue on error), so the reply to the customer is never delayed. Voice notes use the older transcription branch. Files are kept until the chat is deleted; add a cleanup if storage grows.
 Migration: `20261117000021_message_media.sql`.
+
+## Lead scoring fix (2026-11-17)
+The scorer ("Score Lead" in workflow 1) once rated a chat 20 because the LAST message was only "Ало", ignoring a clear goal stated earlier. The prompt now says to judge the whole conversation (a short or empty last message never lowers the score), and the scorer reads the last 20 non-placeholder messages (was 12; the database caps it at 30).
