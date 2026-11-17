@@ -74,3 +74,6 @@ chat for the sales team. If these terms change, edit "MENTORSHIP EARNINGS GUARAN
 Prices are never called "one-time" payments (owner, 2026-11-17): payment plans exist in Kyrgyzstan via Mbank (up to 7 months). The bot states the price and, when a
 customer is deciding or worried about cost, mentions the Mbank installments. Rule: "PRICE WORDING" in the Build Persona node of workflow 1; it overrides the
 older "one-time" lines still present in the base text of the "Sales AI Agent" node.
+
+## Who can open the team page
+The Команда page (team structure, manager statistics, numbers and AI assistants, adding people and invite links) is owner-only (owner request, 2026-11-17). Directors and managers do not see the button; the server also refuses team statistics and number edits for them (migration `20261117000017_owner_only_team_page.sql`). Directors still assign chats and see all chats; managers see only chats assigned to them.

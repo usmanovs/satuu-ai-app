@@ -223,9 +223,11 @@ export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Pr
           {me && (
             <>
               <Badge tone="neutral" className="hidden md:inline-flex" title={me.email ?? undefined}>{ROLE_LABEL[me.role]} · {memberName(me)}</Badge>
-              <Button variant={view === 'team' ? 'default' : 'outline'} size="sm" onClick={() => setView(view === 'team' ? 'inbox' : 'team')}>
-                <Users />{view === 'team' ? 'К диалогам' : me.role === 'manager' ? 'Моя статистика' : 'Команда'}
-              </Button>
+              {me.role === 'owner' && (
+                <Button variant={view === 'team' ? 'default' : 'outline'} size="sm" onClick={() => setView(view === 'team' ? 'inbox' : 'team')}>
+                  <Users />{view === 'team' ? 'К диалогам' : 'Команда'}
+                </Button>
+              )}
             </>
           )}
           <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'} title={theme === 'dark' ? 'Светлая тема' : 'Тёмная тема'}>
@@ -235,7 +237,7 @@ export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Pr
         </div>
       </header>
 
-      {view === 'team' && me ? (
+      {view === 'team' && me?.role === 'owner' ? (
         <main className="min-h-0 flex-1">
           <TeamPanel backend={backend} me={me} members={members} onMembersChanged={() => { void refreshMembers(); void refreshList(); void refreshNumbers(); }} numbers={numbers} onNumbersChanged={() => { void refreshNumbers(); void refreshList(); }} onChangePassword={onChangePassword} />
         </main>
