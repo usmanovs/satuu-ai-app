@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ChatPanel } from '@/components/ChatPanel';
 import { ConversationList, type Filter } from '@/components/ConversationList';
 import { TeamPanel } from '@/components/TeamPanel';
-import { displayName, formatAgo, hotWaitingMin, isHotAlert, isUnread, memberName, needsManager, ROLE_LABEL } from '@/lib/format';
+import { displayName, formatAgo, hotWaitingMin, isHotAlert, isUnread, needsManager } from '@/lib/format';
 import type { BotAlert, Conversation, InboxBackend, IntegrationStatus, Me, Member, Message, Outcome, SendInput, SendResult, WaNumber } from '@/lib/types';
 
 interface Props {
@@ -248,7 +248,6 @@ export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Pr
           </Badge>
           {me && (
             <>
-              <Badge tone="neutral" className="hidden md:inline-flex" title={me.email ?? undefined}>{ROLE_LABEL[me.role]} · {memberName(me)}</Badge>
               {me.role === 'owner' && (
                 <Button variant={view === 'team' ? 'default' : 'outline'} size="sm" onClick={() => setView(view === 'team' ? 'inbox' : 'team')}>
                   <Users />{view === 'team' ? 'К диалогам' : 'Команда'}
