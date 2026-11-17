@@ -169,3 +169,13 @@ export const ROLE_LABEL: Record<'owner' | 'director' | 'manager', string> = {
 export function memberName(m: { display_name: string | null; email: string | null } | undefined): string {
   return m?.display_name?.trim() || m?.email || 'Сотрудник';
 }
+
+/** Chat-list preview: media placeholders become a short label with an icon. */
+export function previewText(p: string | null): string {
+  if (!p) return '—';
+  if (p.startsWith('[Изображение')) return '📷 Фото';
+  if (p.startsWith('[Видео')) return '🎥 Видео';
+  if (p.startsWith('[Документ')) return '📄 Документ';
+  if (p.startsWith('[Голосовое')) return '🎤 Голосовое сообщение';
+  return p;
+}

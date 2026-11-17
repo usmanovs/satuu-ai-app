@@ -1,8 +1,8 @@
-import { ArrowDownWideNarrow, Search } from 'lucide-react';
+import { ArrowDownWideNarrow, Search, UserCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { displayName, formatListTime, formatWait, hotWaitingMin, isHotAlert, isUnread, memberName, needsManager, STATE_LABEL, unreadBadge } from '@/lib/format';
+import { previewText, displayName, formatListTime, formatWait, hotWaitingMin, isHotAlert, isUnread, memberName, needsManager, STATE_LABEL, unreadBadge } from '@/lib/format';
 import type { Conversation, ConvState, LeadLabel, Member, WaNumber } from '@/lib/types';
 
 export type Filter = 'all' | 'needs_manager' | ConvState;
@@ -155,10 +155,10 @@ export function ConversationList({ conversations, loadError, selectedId, onSelec
                       <span className={cn('shrink-0 text-xs', unread ? 'font-semibold text-primary' : 'text-muted-foreground')}>{formatListTime(c.last_message_at, now)}</span>
                     </span>
                     <span className="mt-0.5 flex items-center gap-2">
-                      <span className={cn('truncate text-[13px]', unread ? 'text-foreground' : 'text-muted-foreground')}>{c.last_message_preview ?? '—'}</span>
+                      <span className={cn('truncate text-[13px]', unread ? 'text-foreground' : 'text-muted-foreground')}>{previewText(c.last_message_preview)}</span>
                       {unread && <span className="ml-auto grid h-5 min-w-5 shrink-0 place-items-center rounded-full bg-primary px-1.5 text-[11px] font-bold leading-none text-primary-foreground" aria-label={`Непрочитано: ${unreadBadge(c)}`}>{unreadBadge(c)}</span>}
                     </span>
-                    <span className="mt-1.5 flex flex-wrap items-center gap-1.5 empty:hidden">{waiting !== null && <span className={cn('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold', waiting >= 15 ? 'border-red-300 bg-red-50 text-red-800' : 'border-orange-300 bg-orange-50 text-orange-800')} title="Горячий лид ждёт человека: напишите или отправьте голосовое">⏱ ждёт {formatWait(waiting)}</span>}{needsManager(c) && <span className="manager-flag inline-flex items-center gap-1 rounded-full border border-violet-300 bg-violet-50 px-2 py-0.5 text-[11px] font-bold text-violet-800" title={c.manager_needed_reason ?? 'AI просит подключить менеджера'}><span className="wave" role="img" aria-label="Нужен менеджер">🙋</span>Нужен менеджер</span>}{canFilterByAssignee && numbers.length > 1 && <span className="text-[11px] text-muted-foreground" title="Номер WhatsApp, на который написал клиент">☎ {numbers.find((n) => n.id === c.wa_number_id)?.label ?? '—'}</span>}{canFilterByAssignee && c.assigned_to && <span className="text-[11px] text-muted-foreground">{`→ ${memberName(members.find((m) => m.user_id === c.assigned_to))}`}</span>}</span>
+                    <span className="mt-1.5 flex flex-wrap items-center gap-1.5 empty:hidden">{waiting !== null && <span className={cn('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold', waiting >= 15 ? 'border-red-300 bg-red-50 text-red-800' : 'border-orange-300 bg-orange-50 text-orange-800')} title="Горячий лид ждёт человека: напишите или отправьте голосовое">⏱ ждёт {formatWait(waiting)}</span>}{needsManager(c) && <span className="manager-flag inline-flex items-center gap-1 rounded-full border border-violet-300 bg-violet-50 px-2 py-0.5 text-[11px] font-bold text-violet-800" title={c.manager_needed_reason ?? 'AI просит подключить менеджера'}><span className="wave" role="img" aria-label="Нужен менеджер">🙋</span>Нужен менеджер</span>}{canFilterByAssignee && numbers.length > 1 && <span className="text-[11px] text-muted-foreground" title="Номер WhatsApp, на который написал клиент">☎ {numbers.find((n) => n.id === c.wa_number_id)?.label ?? '—'}</span>}{c.assigned_to && <span className="inline-flex max-w-full items-center gap-1 rounded-full border border-blue-300 bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-800" title="Ответственный менеджер"><UserCheck className="size-3 shrink-0" aria-hidden /><span className="truncate">{memberName(members.find((m) => m.user_id === c.assigned_to))}</span></span>}</span>
                   </span>
                 </button>
               </li>
