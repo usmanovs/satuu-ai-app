@@ -74,7 +74,8 @@ export function ConversationList({ conversations, loadError, selectedId, onSelec
   // open leads with the highest buying signal first; finished chats (won/lost) and unscored ones go last
   const rank = (c: Conversation) => (c.contacts?.is_internal ? -3 : c.outcome ? -2 : (needsManager(c) ? 1000 : 0) + (c.lead_score ?? -1));
   const visible = sortByLead ? [...filtered].sort((a, b) => rank(b) - rank(a)) : filtered;
-  const count = (f: Filter) => (f === 'all' ? all.length : f === 'needs_manager' ? all.filter(needsManager).length : all.filter((c) => c.state === f).length);
+  const counted = all.filter((c) => !c.contacts?.is_internal); // the owner's own chats are listed but never counted
+  const count = (f: Filter) => (f === 'all' ? counted.length : f === 'needs_manager' ? counted.filter(needsManager).length : counted.filter((c) => c.state === f).length);
 
   return (
     <div className="flex h-full min-h-0 flex-col border-r bg-card">
