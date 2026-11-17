@@ -7,10 +7,10 @@ The n8n workflows (cloud: getforce.app.n8n.cloud) and what each one does:
 | 1 | Bot: Receive and Reply | WhatsApp trigger, voice-note transcription, answer-once merging, sales agent, sending, scoring, QR image, manager flag |
 | 2 | Dashboard: Send Manager Reply | Sends replies written in the dashboard |
 | 3 | Sync: Phone App Messages | (inactive) coexistence sync |
-| 4 | Follow-up: Nudge Quiet Leads | Hourly, one nudge to leads quiet for 16-23 h |
+| 4 | Follow-up: Nudge Quiet Leads | Hourly 08:00-20:00 Bishkek, one nudge to leads quiet for 16-23 h |
 | 5 | Alert: Bot Errors | Error workflow of 1, 2 and 4; writes a banner alert to the dashboard |
-| 6 | Watchdog: Unanswered Messages | Every 10 min; alerts if customers wrote and got no reply for 5+ min |
-| 8 | Follow-up: Second Touch (Template) | Hourly: one approved template message (EN/RU/KY) to warm leads quiet 3-7 days; skips itself until Meta approves the templates |
+| 6 | Watchdog: Unanswered Messages | Every 30 min; alerts if customers wrote and got no reply for 5+ min |
+| 8 | Follow-up: Second Touch (Template) | Hourly 10:00-18:00 Bishkek: one approved template message (EN/RU/KY) to warm leads quiet 3-7 days; skips itself until Meta approves the templates |
 | 7 | Tests: Bot Regression | Runs ~25 scripted chats through the real bot; alerts if any check fails |
 
 The sales prompt lives in two places in workflow 1: the base text in the node "Sales AI Agent" and the facts, payment,
@@ -30,7 +30,7 @@ Workflow 7 posts messages to the "Test Entry" webhook of workflow 1 (protected b
 numbers that start with `99900`; the bot treats them like normal customers except that nothing is sent to WhatsApp and
 the QR image is skipped. Replies are read back with `/test-replies`, checked with regular expressions, and all `99900*`
 contacts are deleted afterwards (`/test-cleanup`, enforced in the database). Run it with the "Run Tests Now" trigger or
-wait for the daily 09:00 Bishkek run. To add a case, add an entry to the `defs` list in its "Cases" node.
+wait for the weekly Monday 09:00 Bishkek run (weekly, not daily, to save executions and AI calls; run it by hand after any prompt change). To add a case, add an entry to the `defs` list in its "Cases" node.
 
 ## Migrations added with these features
 `20261116000013_followups_and_hot_alerts.sql`, `20261116000014_manager_needed_flag.sql`,
@@ -61,3 +61,6 @@ The prompt also states that live classes are held on Zoom (the bot gives no link
 workflow, templates and webhook serve both numbers; replies go out from the number the customer wrote to. It is listed in
 `wa_numbers` ("Номер для лидов"). Registering a new number needs a 6-digit PIN chosen by the owner (never stored in the repo).
 Chat-list tag under each chat shows which number the customer wrote to.
+
+## Cost notes
+n8n Cloud Starter allows 2,500 executions a month; every WhatsApp webhook (including sent/delivered/read statuses) and every scheduled run counts. Schedules were cut on 2026-11-17: watchdog every 30 min, nudges and second touch only inside daytime Bishkek hours, regression tests weekly. AI calls use n8n Gateway credits unless an own OpenAI credential is attached to the model nodes (OpenAI Chat Model, Lead Scoring Model, Nudge Model, Transcribe Voice).
