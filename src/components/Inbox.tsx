@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Bell, LogOut, MessageSquareText, Moon, Radio, Sun, Timer, Unplug, Users } from 'lucide-react';
+import { Bell, LogOut, MessageSquareText, Moon, Radio, Sun, Timer, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ChatPanel } from '@/components/ChatPanel';
@@ -184,7 +184,6 @@ export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Pr
     }
   }, [convs]);
   const managerCount = (convs ?? []).filter(needsManager).length;
-  const aiChecked = integration?.last_ai_check_at ?? null;
 
   return (
     <div className="flex h-dvh flex-col">
@@ -246,9 +245,6 @@ export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Pr
           )}
           <Badge tone={live === 'on' ? 'emerald' : 'amber'} title="Обновления в реальном времени">
             <Radio className="size-3" />{live === 'on' ? 'Онлайн' : live === 'connecting' ? 'Подключение…' : 'Нет связи'}
-          </Badge>
-          <Badge tone={aiChecked ? 'neutral' : 'amber'} className="hidden sm:inline-flex" title="Когда n8n последний раз спрашивал, можно ли AI отвечать">
-            <Unplug className="size-3" />{aiChecked ? `n8n: проверка ${formatAgo(aiChecked, now)}` : 'n8n: не подключено'}
           </Badge>
           {me && (
             <>
