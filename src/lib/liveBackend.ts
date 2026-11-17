@@ -129,6 +129,11 @@ export function createLiveBackend(supabase: SupabaseClient, functionsBaseUrl: st
       return error ? { ok: false, error: 'Не удалось сохранить причину. Попробуйте ещё раз.' } : { ok: true };
     },
 
+    async setPurchasedOption(conversationId, option): Promise<SimpleResult> {
+      const { error } = await supabase.rpc('set_purchased_option', { p_conversation: conversationId, p_option: option });
+      return error ? { ok: false, error: 'Не удалось сохранить тариф. Попробуйте ещё раз.' } : { ok: true };
+    },
+
     async funnelStats(days): Promise<FunnelStats> {
       const { data, error } = await supabase.rpc('funnel_stats', { p_days: days });
       if (error) throw new Error(error.message);

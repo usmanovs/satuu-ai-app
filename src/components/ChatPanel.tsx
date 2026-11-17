@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/input';
 import { MessageBubble } from '@/components/MessageBubble';
 import { LeadBadge, stateTone } from '@/components/ConversationList';
-import { displayName, formatAgo, LOST_REASON_LABEL, memberName, formatDay, inServiceWindow, newIdempotencyKey, sameDay, STATE_LABEL, windowRemaining } from '@/lib/format';
-import type { Conversation, IntegrationStatus, LostReason, Member, Message, Outcome, Role, SendInput, SendResult } from '@/lib/types';
+import { displayName, formatAgo, LOST_REASON_LABEL, memberName, PURCHASED_OPTION_LABEL, formatDay, inServiceWindow, newIdempotencyKey, sameDay, STATE_LABEL, windowRemaining } from '@/lib/format';
+import type { Conversation, IntegrationStatus, LostReason, Member, Message, Outcome, PurchasedOption, Role, SendInput, SendResult } from '@/lib/types';
 
 interface Props {
   conv: Conversation;
@@ -22,7 +22,8 @@ interface Props {
   role: Role;
   members: Member[];
   onAssign: (userId: string | null) => Promise<string | null>;
-  onOutcome: (outcome: Outcome | 'open') => void;
+  onOutcome: (outcome: Outcome | 'open', option?: PurchasedOption) => void;
+  onOption: (option: PurchasedOption) => Promise<string | null>;
   onLostReason: (reason: LostReason | null) => Promise<string | null>;
   outcomeBusy: boolean;
   outcomeError: string | undefined;
@@ -32,12 +33,13 @@ interface Props {
 type Notice = { tone: 'error' | 'warn'; text: string };
 interface Attempt { key: string; text: string; template: boolean }
 
-export function ChatPanel({ conv, messages, integration, now, pendingAction, actionError, onTakeover, onResume, onSend, role, members, onAssign, onOutcome, onLostReason, outcomeBusy, outcomeError, onBack }: Props) {
+export function ChatPanel({ conv, messages, integration, now, pendingAction, actionError, onTakeover, onResume, onSend, role, members, onAssign, onOutcome, onOption, onLostReason, outcomeBusy, outcomeError, onBack }: Props) {
   const [text, setText] = useState('');
   const [sending, setSending] = useState<Attempt | null>(null);
   const [attempt, setAttempt] = useState<Attempt | null>(null); // kept only after an ambiguous network failure
   const [notice, setNotice] = useState<Notice | null>(null);
   const [assignBusy, setAssignBusy] = useState(false);
+  const [pickingOption, setPickingOption] = useState(false);
   const [showInfo, setShowInfo] = useState(false); // phones: lead details are collapsed by default
   const [assignError, setAssignError] = useState<string | null>(null);
   const [lostError, setLostError] = useState<string | null>(null);
@@ -188,7 +190,7 @@ export function ChatPanel({ conv, messages, integration, now, pendingAction, act
             </Button>
           ) : (
             <>
-              <Button variant="outline" size="sm" onClick={() => onOutcome('won')} disabled={outcomeBusy}>
+              <Button variant="outline" size="sm" onClick={() => setPickingOption((v) => !v)} aria-expanded={pickingOption} disabled={outcomeBusy}>
                 {outcomeBusy ? <Loader2 className="animate-spin" /> : <Check />}<span>Купил</span>
               </Button>
               <Button variant="outline" size="sm" onClick={() => onOutcome('lost')} disabled={outcomeBusy}>
@@ -197,6 +199,27 @@ export function ChatPanel({ conv, messages, integration, now, pendingAction, act
             </>
           )}
         </div>
+        {!conv.outcome && pickingOption && (
+          <div className="flex basis-full flex-wrap items-center gap-1.5" role="group" aria-label="Что купил клиент">
+            <span className="text-muted-foreground">Что купил клиент:</span>
+            {(Object.keys(PURCHASED_OPTION_LABEL) as PurchasedOption[]).map((k) => (
+              <Button key={k} variant="outline" size="sm" disabled={outcomeBusy} onClick={() => { setPickingOption(false); onOutcome('won', k); }}>{PURCHASED_OPTION_LABEL[k]}</Button>
+            ))}
+            <span className="basis-full text-[12px] text-muted-foreground">После выбора клиенту сами уйдут сообщения: приветствие, чек-лист, напоминание о старте, отзыв после первой недели.</span>
+          </div>
+        )}
+        {conv.outcome === 'won' && (
+          <label className="flex basis-full items-center gap-1.5">
+            <span className="text-muted-foreground">Тариф (для сообщений после оплаты):</span>
+            <select
+              value={conv.purchased_option ?? ''} aria-label="Тариф клиента" className="h-8 rounded-md border bg-card px-2 text-[13px]"
+              onChange={(e) => { if (e.target.value) void onOption(e.target.value as PurchasedOption).then((err) => setLostError(err)); }}
+            >
+              <option value="" disabled>не выбран</option>
+              {(Object.keys(PURCHASED_OPTION_LABEL) as PurchasedOption[]).map((k) => <option key={k} value={k}>{PURCHASED_OPTION_LABEL[k]}</option>)}
+            </select>
+          </label>
+        )}
         {conv.outcome === 'lost' && (
           <label className="flex basis-full items-center gap-1.5">
             <span className="text-muted-foreground">Причина отказа:</span>

@@ -7,7 +7,7 @@ import { ConversationList, type Filter } from '@/components/ConversationList';
 import { AnalyticsPanel } from '@/components/AnalyticsPanel';
 import { TeamPanel } from '@/components/TeamPanel';
 import { displayName, formatAgo, hotWaitingMin, isHotAlert, isUnread, needsManager } from '@/lib/format';
-import type { BotAlert, Conversation, InboxBackend, IntegrationStatus, Me, Member, Message, Outcome, SendInput, SendResult, WaNumber } from '@/lib/types';
+import type { BotAlert, Conversation, InboxBackend, IntegrationStatus, Me, Member, Message, Outcome, PurchasedOption, SendInput, SendResult, WaNumber } from '@/lib/types';
 
 interface Props {
   backend: InboxBackend;
@@ -165,12 +165,17 @@ export function Inbox({ backend, onSignOut, onChangePassword }: Props) {
     return r.ok ? null : r.error;
   }
 
-  async function runOutcome(id: string, outcome: Outcome | 'open') {
+  async function runOutcome(id: string, outcome: Outcome | 'open', option?: PurchasedOption) {
     setOutcomeBusy(id);
     setOutcomeError((e) => { const { [id]: _drop, ...rest } = e; return rest; });
     const r = await backend.setOutcome(id, outcome);
+    let error: string | null = r.ok ? null : r.error;
+    if (r.ok && outcome === 'won' && option) {
+      const o = await backend.setPurchasedOption(id, option);
+      if (!o.ok) error = o.error;
+    }
     setOutcomeBusy(null);
-    if (!r.ok) setOutcomeError((e) => ({ ...e, [id]: r.error }));
+    if (error) setOutcomeError((e) => ({ ...e, [id]: error }));
     await refreshList(); // shown only after the server confirms
   }
 
@@ -310,7 +315,8 @@ export function Inbox({ backend, onSignOut, onChangePassword }: Props) {
               onResume={() => runAction(selected.id, 'resume')}
               onSend={send}
               role={me?.role ?? 'manager'} members={members} onAssign={(u) => assignTo(selected.id, u)}
-              onOutcome={(o) => runOutcome(selected.id, o)}
+              onOutcome={(o, option) => runOutcome(selected.id, o, option)}
+              onOption={async (option) => { const r = await backend.setPurchasedOption(selected.id, option); await refreshList(); return r.ok ? null : r.error; }}
               onLostReason={async (reason) => { const r = await backend.setLostReason(selected.id, reason); await refreshList(); return r.ok ? null : r.error; }}
               outcomeBusy={outcomeBusy === selected.id} outcomeError={outcomeError[selected.id]}
               onBack={closeChat}

@@ -1,5 +1,11 @@
 import type { Conversation, ConvState, LostReason, Message, MsgStatus } from './types';
 
+export const PURCHASED_OPTION_LABEL: Record<'recordings' | 'live' | 'mentorship', string> = {
+  recordings: 'Записи · $249',
+  live: 'Live-занятия · $349',
+  mentorship: 'Менторство 1:1 · $2 500',
+};
+
 export const LOST_REASON_LABEL: Record<LostReason, string> = {
   price: 'Дорого',
   no_time: 'Нет времени',

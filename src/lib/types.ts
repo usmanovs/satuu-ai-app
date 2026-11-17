@@ -4,6 +4,7 @@ export type SenderRole = 'customer' | 'ai' | 'manager';
 export type StateAction = 'takeover' | 'resume' | 'mark_read';
 export type LeadLabel = 'cold' | 'warm' | 'hot';
 export type Outcome = 'won' | 'lost';
+export type PurchasedOption = 'recordings' | 'live' | 'mentorship';
 export type LostReason = 'price' | 'no_time' | 'no_laptop' | 'trust' | 'other_topic' | 'later' | 'other';
 export type Role = 'owner' | 'director' | 'manager';
 
@@ -58,6 +59,8 @@ export interface Conversation {
   outcome_at: string | null;
   /** Why the lead said no; set by the person who marked the chat as lost. */
   lost_reason?: LostReason | null;
+  /** Which option the customer bought (set when the chat is marked as bought); drives the after-payment messages. */
+  purchased_option?: PurchasedOption | null;
   /** When the AI first rated the lead hot (80+). */
   hot_alerted_at?: string | null;
   /** When a person last wrote in this chat. */
@@ -149,6 +152,7 @@ export interface InboxBackend {
   action(conversationId: string, action: StateAction): Promise<ActionResult>;
   setOutcome(conversationId: string, outcome: Outcome | 'open'): Promise<OutcomeResult>;
   setLostReason(conversationId: string, reason: LostReason | null): Promise<SimpleResult>;
+  setPurchasedOption(conversationId: string, option: PurchasedOption): Promise<SimpleResult>;
   funnelStats(days: number): Promise<FunnelStats>;
   listReports(): Promise<SalesReport[]>;
   /** Counts of lost chats by reason ('none' = no reason given). Only what the signed-in person may see. */

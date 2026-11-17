@@ -146,3 +146,20 @@ revoke execute on function public.get_onboarding_due(uuid, integer), public.onbo
   public.onboarding_confirm(uuid, uuid, text), public.onboarding_release(uuid, uuid, text) from public, anon, authenticated;
 grant execute on function public.get_onboarding_due(uuid, integer), public.onboarding_claim(uuid, uuid, text, text),
   public.onboarding_confirm(uuid, uuid, text), public.onboarding_release(uuid, uuid, text) to service_role;
+
+-- Dashboard: the manager picks (or corrects) the bought option after marking "Купил".
+create or replace function public.set_purchased_option(p_conversation uuid, p_option text)
+returns jsonb language plpgsql security definer set search_path to '' as $fn$
+declare
+  v public.conversations;
+begin
+  select * into v from public.conversations where id = p_conversation for update;
+  if not found or not public.can_see(v.business_id, v.assigned_to) then raise exception 'not_found'; end if;
+  if v.outcome is distinct from 'won' then raise exception 'not_won'; end if;
+  if p_option is null or p_option not in ('recordings', 'live', 'mentorship') then raise exception 'invalid_option'; end if;
+  update public.conversations set purchased_option = p_option where id = v.id;
+  return jsonb_build_object('conversation_id', v.id, 'purchased_option', p_option);
+end;
+$fn$;
+revoke execute on function public.set_purchased_option(uuid, text) from public, anon;
+grant execute on function public.set_purchased_option(uuid, text) to authenticated;
