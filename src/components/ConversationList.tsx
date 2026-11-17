@@ -53,7 +53,7 @@ interface Props {
   onAssignee: (v: string) => void;
 }
 
-export function ConversationList({ conversations, loadError, selectedId, onSelect, filter, onFilter, query, onQuery, now, sortByLead, onSortByLead, members, numbers, canFilterByAssignee, assignee, onAssignee }: Props) {
+export function ConversationList({ conversations, loadError, selectedId, onSelect, filter, onFilter, query, onQuery, now, sortByLead, onSortByLead, members, numbers, canFilterByAssignee, assignee }: Props) {
   const all = conversations ?? [];
   const q = query.trim().toLowerCase();
   const filtered = all.filter((c) => {
@@ -88,16 +88,6 @@ export function ConversationList({ conversations, loadError, selectedId, onSelec
           >
             <ArrowDownWideNarrow className="size-3.5" />По вероятности покупки
           </button>
-          {canFilterByAssignee && (
-            <select
-              value={assignee} onChange={(e) => onAssignee(e.target.value)} aria-label="Фильтр по менеджеру"
-              className="h-7 max-w-[55%] rounded-md border bg-card px-2 text-xs font-medium"
-            >
-              <option value="all">Все менеджеры</option>
-              <option value="none">Не назначены</option>
-              {members.filter((m) => m.role === 'manager').map((m) => <option key={m.user_id} value={m.user_id}>{memberName(m)}{m.active ? '' : ' (отключён)'}</option>)}
-            </select>
-          )}
         </div>
         <div className="flex gap-1.5 overflow-x-auto pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden" role="tablist" aria-label="Фильтр по статусу">
           {FILTERS.map((f) => (
