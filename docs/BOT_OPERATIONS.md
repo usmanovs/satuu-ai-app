@@ -77,3 +77,8 @@ older "one-time" lines still present in the base text of the "Sales AI Agent" no
 
 ## Who can open the team page
 The Команда page (team structure, manager statistics, numbers and AI assistants, adding people and invite links) is owner-only (owner request, 2026-11-17). Directors and managers do not see the button; the server also refuses team statistics and number edits for them (migration `20261117000017_owner_only_team_page.sql`). Directors still assign chats and see all chats; managers see only chats assigned to them.
+
+## Som prices
+Company rate: 87.5 som per 1 USD (owner, 2026-11-17). For customers who write in Kyrgyz and ask about prices, and for anyone who asks for som, the bot shows dollars and som:
+$249 = 21,788 som, $349 = 30,538 som, $2,500 = 218,750 som (fixed figures in the prompt so the model never calculates). If the rate or prices change, edit "SOM PRICES"
+in the Build Persona node of workflow 1.
