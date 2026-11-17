@@ -37,7 +37,21 @@ function useTheme(): [Theme, () => void] {
 
 const errText = (e: unknown) => (e instanceof Error ? e.message : 'неизвестная ошибка');
 
-export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Props) {
+const MOTTOS = [
+  'Каждый ответ приближает чью-то новую профессию 🚀',
+  'Быстрый ответ — половина продажи ⚡',
+  'Сегодня ты меняешь чью-то жизнь 💪',
+  'Слушай клиента, и сделка найдёт тебя 🎯',
+  'Маленький шаг сегодня — большая сделка завтра 🌱',
+  'Тёплое слово открывает любые двери 😊',
+  'Ты помогаешь людям начать с нуля, и это круто ✨',
+];
+/** One line per day, the same for everyone. */
+function dailyMotto(now: number): string {
+  return MOTTOS[Math.floor(now / 86_400_000) % MOTTOS.length];
+}
+
+export function Inbox({ backend, onSignOut, onChangePassword }: Props) {
   const now = useNow(15_000);
   const [theme, toggleTheme] = useTheme();
   const [convs, setConvs] = useState<Conversation[] | null>(null);
@@ -206,7 +220,7 @@ export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Pr
         <span className="grid size-8 place-items-center rounded-lg bg-primary text-primary-foreground"><MessageSquareText className="size-4" /></span>
         <div className="min-w-0">
           <h1 className="truncate text-[15px] font-bold leading-tight">Satuu AI · Входящие</h1>
-          <p className="truncate text-xs text-muted-foreground">{businessName ?? 'Демо-бизнес'}{unreadCount > 0 && ` · непрочитано: ${unreadCount}`}</p>
+          <p className="truncate text-xs text-muted-foreground">{dailyMotto(now)}{unreadCount > 0 && ` · непрочитано: ${unreadCount}`}</p>
         </div>
         <div className="ml-auto flex items-center gap-2">
           {managerCount > 0 && (
