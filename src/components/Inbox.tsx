@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Bell, LogOut, MessageSquareText, Moon, Radio, Sun, Timer, Users } from 'lucide-react';
+import { Bell, ChartColumn, LogOut, MessageSquareText, Moon, Radio, Sun, Timer, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ChatPanel } from '@/components/ChatPanel';
 import { ConversationList, type Filter } from '@/components/ConversationList';
+import { AnalyticsPanel } from '@/components/AnalyticsPanel';
 import { TeamPanel } from '@/components/TeamPanel';
 import { displayName, formatAgo, hotWaitingMin, isHotAlert, isUnread, needsManager } from '@/lib/format';
 import type { BotAlert, Conversation, InboxBackend, IntegrationStatus, Me, Member, Message, Outcome, SendInput, SendResult, WaNumber } from '@/lib/types';
@@ -61,7 +62,7 @@ export function Inbox({ backend, onSignOut, onChangePassword }: Props) {
   const [filter, setFilter] = useState<Filter>('all');
   const [query, setQuery] = useState('');
   const [sortByLead, setSortByLead] = useState(false);
-  const [view, setView] = useState<'inbox' | 'team'>('inbox');
+  const [view, setView] = useState<'inbox' | 'team' | 'analytics'>('inbox');
   const [me, setMe] = useState<Me | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [numbers, setNumbers] = useState<WaNumber[]>([]);
@@ -263,9 +264,14 @@ export function Inbox({ backend, onSignOut, onChangePassword }: Props) {
           {me && (
             <>
               {me.role === 'owner' && (
-                <Button variant={view === 'team' ? 'default' : 'outline'} size="sm" onClick={() => setView(view === 'team' ? 'inbox' : 'team')}>
-                  <Users />{view === 'team' ? 'К диалогам' : 'Команда'}
-                </Button>
+                <>
+                  <Button variant={view === 'analytics' ? 'default' : 'outline'} size="sm" onClick={() => setView(view === 'analytics' ? 'inbox' : 'analytics')}>
+                    <ChartColumn />{view === 'analytics' ? 'К диалогам' : 'Аналитика'}
+                  </Button>
+                  <Button variant={view === 'team' ? 'default' : 'outline'} size="sm" onClick={() => setView(view === 'team' ? 'inbox' : 'team')}>
+                    <Users />{view === 'team' ? 'К диалогам' : 'Команда'}
+                  </Button>
+                </>
               )}
             </>
           )}
@@ -276,7 +282,11 @@ export function Inbox({ backend, onSignOut, onChangePassword }: Props) {
         </div>
       </header>
 
-      {view === 'team' && me?.role === 'owner' ? (
+      {view === 'analytics' && me?.role === 'owner' ? (
+        <main className="min-h-0 flex-1">
+          <AnalyticsPanel backend={backend} me={me} />
+        </main>
+      ) : view === 'team' && me?.role === 'owner' ? (
         <main className="min-h-0 flex-1">
           <TeamPanel backend={backend} me={me} members={members} onMembersChanged={() => { void refreshMembers(); void refreshList(); void refreshNumbers(); }} numbers={numbers} onNumbersChanged={() => { void refreshNumbers(); void refreshList(); }} onChangePassword={onChangePassword} />
         </main>
