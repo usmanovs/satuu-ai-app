@@ -87,3 +87,6 @@ in the Build Persona node of workflow 1.
 GetForce has a separate AI photo/video course: https://courses.getforce.org/ai-video, 2,000 som (owner, 2026-11-17). The bot mentions it (one or two sentences plus the
 link, price in som, never converted) to customers interested in AI photo or AI video, and says nothing else about its content or payment. It is not part of the main
 program or its options. Rule: "AI VIDEO COURSE" in the Build Persona node of workflow 1.
+The AI video course instructor is Oskon Akmatov (the course page and his Instagram spell it Akmatov), creator of popular Kyrgyz AI music videos, some with over 500,000 views
+(owner). The bot names him and shares https://www.instagram.com/oskon_akmatov/ when asked who teaches it or to see his work, and adds nothing else about him.
+It also says the course is recorded and self-paced (stated on the course page).
