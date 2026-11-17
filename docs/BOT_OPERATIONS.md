@@ -64,3 +64,8 @@ Chat-list tag under each chat shows which number the customer wrote to.
 
 ## Cost notes
 n8n Cloud Starter allows 2,500 executions a month; every WhatsApp webhook (including sent/delivered/read statuses) and every scheduled run counts. Schedules were cut on 2026-11-17: watchdog every 30 min, nudges and second touch only inside daytime Bishkek hours, regression tests weekly. AI calls use n8n Gateway credits unless an own OpenAI credential is attached to the model nodes (OpenAI Chat Model, Lead Scoring Model, Nudge Model, Transcribe Voice).
+
+## Mentorship earnings guarantee
+The $2,500 1:1 mentorship comes with a guarantee of earning $500 (owner, 2026-11-17). The sales prompt states it only for that option, never for
+Recordings or Live classes, and never as an average or forecast. The bot has no conditions, timeframe or payout details, so it says so and flags the
+chat for the sales team. If these terms change, edit "MENTORSHIP EARNINGS GUARANTEE" in the Build Persona node of workflow 1.
