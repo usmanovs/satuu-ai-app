@@ -69,3 +69,8 @@ n8n Cloud Starter allows 2,500 executions a month; every WhatsApp webhook (inclu
 The $2,500 1:1 mentorship comes with a guarantee of earning $500 (owner, 2026-11-17). The sales prompt states it only for that option, never for
 Recordings or Live classes, and never as an average or forecast. The bot has no conditions, timeframe or payout details, so it says so and flags the
 chat for the sales team. If these terms change, edit "MENTORSHIP EARNINGS GUARANTEE" in the Build Persona node of workflow 1.
+
+## Price wording
+Prices are never called "one-time" payments (owner, 2026-11-17): payment plans exist in Kyrgyzstan via Mbank (up to 7 months). The bot states the price and, when a
+customer is deciding or worried about cost, mentions the Mbank installments. Rule: "PRICE WORDING" in the Build Persona node of workflow 1; it overrides the
+older "one-time" lines still present in the base text of the "Sales AI Agent" node.
