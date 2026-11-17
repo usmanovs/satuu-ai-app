@@ -145,10 +145,14 @@ export function ConversationList({ conversations, loadError, selectedId, onSelec
                 >
                   <span className="mt-0.5 grid size-10 shrink-0 place-items-center rounded-full bg-muted text-sm font-semibold text-muted-foreground">{initials(name)}</span>
                   <span className="min-w-0 flex-1">
-                    <span className="flex items-start justify-between gap-2">
-                      <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
+                    <span className="flex items-center justify-between gap-2">
+                      <span className="flex min-w-0 items-center gap-1.5">
                         <span className={cn('min-w-[7ch] max-w-full truncate text-[15px]', unread ? 'font-bold' : 'font-medium')}>{name}</span>
                         {isHotAlert(c) && <span className="fire shrink-0 text-base" role="img" aria-label="Горячий лид" title={`Горячий лид · ${c.lead_score}/100${c.lead_reason ? ` — ${c.lead_reason}` : ''}`}>🔥</span>}
+                      </span>
+                      <span className={cn('shrink-0 text-xs', unread ? 'font-semibold text-primary' : 'text-muted-foreground')}>{formatListTime(c.last_message_at, now)}</span>
+                    </span>
+                    <span className="mt-1 flex flex-wrap items-center gap-1.5">
                         {(() => {
                           const who = c.assigned_to ? memberName(members.find((m) => m.user_id === c.assigned_to)) : null;
                           const label = who && c.state === 'human_handling' ? `${STATE_SHORT[c.state]}: ${who}` : STATE_SHORT[c.state];
@@ -160,10 +164,8 @@ export function ConversationList({ conversations, loadError, selectedId, onSelec
                           );
                         })()}
                         <span className="shrink-0"><LeadBadge c={c} /></span>
-                      </span>
-                      <span className={cn('shrink-0 text-xs', unread ? 'font-semibold text-primary' : 'text-muted-foreground')}>{formatListTime(c.last_message_at, now)}</span>
                     </span>
-                    <span className="mt-0.5 flex items-center gap-2">
+                    <span className="mt-1 flex items-center gap-2">
                       <span className={cn('truncate text-[13px]', unread ? 'text-foreground' : 'text-muted-foreground')}>{previewText(c.last_message_preview)}</span>
                       {unread && <span className="ml-auto grid h-5 min-w-5 shrink-0 place-items-center rounded-full bg-primary px-1.5 text-[11px] font-bold leading-none text-primary-foreground" aria-label={`Непрочитано: ${unreadBadge(c)}`}>{unreadBadge(c)}</span>}
                     </span>
