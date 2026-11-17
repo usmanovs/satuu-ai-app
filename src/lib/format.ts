@@ -28,7 +28,7 @@ export function displayName(c: Pick<Conversation, 'contacts'>): string {
 /** A lead that is ready to buy and still open: shown with the glowing fire. Matches the 80+ alert threshold. */
 export const HOT_ALERT_SCORE = 80;
 export function isHotAlert(c: Conversation): boolean {
-  return !c.outcome && c.lead_score !== null && c.lead_score >= HOT_ALERT_SCORE;
+  return !c.contacts?.is_internal && !c.outcome && c.lead_score !== null && c.lead_score >= HOT_ALERT_SCORE;
 }
 
 /** The bot asked for a sales manager and no manager has opened the chat since. */
@@ -40,7 +40,7 @@ export function needsManager(c: Conversation): boolean {
 
 /** Minutes a hot lead has been waiting for a person (null = not a hot lead waiting for a human). */
 export function hotWaitingMin(c: Conversation, now: number = Date.now()): number | null {
-  if (!c.hot_alerted_at || c.outcome) return null;
+  if (!c.hot_alerted_at || c.outcome || c.contacts?.is_internal) return null;
   const alerted = Date.parse(c.hot_alerted_at);
   if (c.last_manager_message_at && Date.parse(c.last_manager_message_at) >= alerted) return null;
   return Math.max(0, Math.floor((now - alerted) / 60_000));

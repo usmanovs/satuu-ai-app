@@ -20,6 +20,7 @@ export const leadTone = { hot: 'red', warm: 'amber', cold: 'neutral' } as const;
 
 /** What the manager sees: the real outcome wins over the AI estimate. */
 export function LeadBadge({ c }: { c: Conversation }) {
+  if (c.contacts?.is_internal) return <Badge tone="neutral" title="Ваш собственный чат: не считается лидом">Мой чат</Badge>;
   if (c.outcome === 'won') return <Badge tone="emerald">Купил</Badge>;
   if (c.outcome === 'lost') return <Badge tone="neutral">Не купит</Badge>;
   if (c.lead_score === null || c.lead_label === null) return null;
@@ -71,7 +72,7 @@ export function ConversationList({ conversations, loadError, selectedId, onSelec
     );
   });
   // open leads with the highest buying signal first; finished chats (won/lost) and unscored ones go last
-  const rank = (c: Conversation) => (c.outcome ? -2 : (needsManager(c) ? 1000 : 0) + (c.lead_score ?? -1));
+  const rank = (c: Conversation) => (c.contacts?.is_internal ? -3 : c.outcome ? -2 : (needsManager(c) ? 1000 : 0) + (c.lead_score ?? -1));
   const visible = sortByLead ? [...filtered].sort((a, b) => rank(b) - rank(a)) : filtered;
   const count = (f: Filter) => (f === 'all' ? all.length : f === 'needs_manager' ? all.filter(needsManager).length : all.filter((c) => c.state === f).length);
 

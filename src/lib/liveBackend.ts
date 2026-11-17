@@ -55,7 +55,7 @@ export function createLiveBackend(supabase: SupabaseClient, functionsBaseUrl: st
     async listConversations() {
       const { data, error } = await supabase
         .from('conversations')
-        .select('*, contacts(wa_id, display_name)')
+        .select('*, contacts(wa_id, display_name, is_internal)')
         .is('hidden_at', null)
         .order('last_message_at', { ascending: false, nullsFirst: false })
         .limit(200);

@@ -62,7 +62,7 @@ export interface Conversation {
   hot_alerted_at?: string | null;
   /** When a person last wrote in this chat. */
   last_manager_message_at?: string | null;
-  contacts: { wa_id: string; display_name: string | null };
+  contacts: { wa_id: string; display_name: string | null; /** the owner's own chat: never counted as a hot lead or in statistics */ is_internal?: boolean };
   /** How many customer messages arrived since the manager last opened the chat (filled by the backend). */
   unread_count?: number;
 }
