@@ -4,6 +4,7 @@ export type SenderRole = 'customer' | 'ai' | 'manager';
 export type StateAction = 'takeover' | 'resume' | 'mark_read';
 export type LeadLabel = 'cold' | 'warm' | 'hot';
 export type Outcome = 'won' | 'lost';
+export type LostReason = 'price' | 'no_time' | 'no_laptop' | 'trust' | 'other_topic' | 'later' | 'other';
 export type Role = 'owner' | 'director' | 'manager';
 
 export interface Me { user_id: string; role: Role; email: string | null; display_name: string | null }
@@ -55,6 +56,8 @@ export interface Conversation {
   /** Set by a manager: the real result. */
   outcome: Outcome | null;
   outcome_at: string | null;
+  /** Why the lead said no; set by the person who marked the chat as lost. */
+  lost_reason?: LostReason | null;
   contacts: { wa_id: string; display_name: string | null };
   /** How many customer messages arrived since the manager last opened the chat (filled by the backend). */
   unread_count?: number;
@@ -130,6 +133,9 @@ export interface InboxBackend {
   subscribe(onChange: (e: ChangeEvent) => void, onStatus: (s: 'on' | 'off') => void): () => void;
   action(conversationId: string, action: StateAction): Promise<ActionResult>;
   setOutcome(conversationId: string, outcome: Outcome | 'open'): Promise<OutcomeResult>;
+  setLostReason(conversationId: string, reason: LostReason | null): Promise<SimpleResult>;
+  /** Counts of lost chats by reason ('none' = no reason given). Only what the signed-in person may see. */
+  lostReasons(): Promise<Record<string, number>>;
   me(): Promise<Me>;
   listNumbers(): Promise<WaNumber[]>;
   saveNumber(numberId: string, patch: NumberPatch): Promise<SimpleResult>;

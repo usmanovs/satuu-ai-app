@@ -118,6 +118,23 @@ export function createLiveBackend(supabase: SupabaseClient, functionsBaseUrl: st
       }
     },
 
+    async setLostReason(conversationId, reason): Promise<SimpleResult> {
+      const { error } = await supabase.rpc('set_lost_reason', { p_conversation: conversationId, p_reason: reason });
+      return error ? { ok: false, error: 'Не удалось сохранить причину. Попробуйте ещё раз.' } : { ok: true };
+    },
+
+    async lostReasons(): Promise<Record<string, number>> {
+      const { data, error } = await supabase.from('conversations').select('lost_reason, contacts(wa_id)').eq('outcome', 'lost');
+      if (error) throw new Error(error.message);
+      const out: Record<string, number> = {};
+      for (const r of (data ?? []) as unknown as { lost_reason: string | null; contacts: { wa_id: string } | null }[]) {
+        if (r.contacts?.wa_id?.startsWith('99900')) continue;
+        const k = r.lost_reason ?? 'none';
+        out[k] = (out[k] ?? 0) + 1;
+      }
+      return out;
+    },
+
     async listNumbers(): Promise<WaNumber[]> {
       const { data, error } = await supabase.from('wa_numbers').select('*').order('created_at', { ascending: true });
       if (error) throw new Error(error.message);

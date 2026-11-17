@@ -5,8 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/input';
 import { MessageBubble } from '@/components/MessageBubble';
 import { LeadBadge, stateTone } from '@/components/ConversationList';
-import { displayName, formatAgo, memberName, formatDay, inServiceWindow, newIdempotencyKey, sameDay, STATE_LABEL, windowRemaining } from '@/lib/format';
-import type { Conversation, IntegrationStatus, Member, Message, Outcome, Role, SendInput, SendResult } from '@/lib/types';
+import { displayName, formatAgo, LOST_REASON_LABEL, memberName, formatDay, inServiceWindow, newIdempotencyKey, sameDay, STATE_LABEL, windowRemaining } from '@/lib/format';
+import type { Conversation, IntegrationStatus, LostReason, Member, Message, Outcome, Role, SendInput, SendResult } from '@/lib/types';
 
 interface Props {
   conv: Conversation;
@@ -22,6 +22,7 @@ interface Props {
   members: Member[];
   onAssign: (userId: string | null) => Promise<string | null>;
   onOutcome: (outcome: Outcome | 'open') => void;
+  onLostReason: (reason: LostReason | null) => Promise<string | null>;
   outcomeBusy: boolean;
   outcomeError: string | undefined;
   onBack: () => void;
@@ -30,7 +31,7 @@ interface Props {
 type Notice = { tone: 'error' | 'warn'; text: string };
 interface Attempt { key: string; text: string; template: boolean }
 
-export function ChatPanel({ conv, messages, integration, now, pendingAction, actionError, onTakeover, onResume, onSend, role, members, onAssign, onOutcome, outcomeBusy, outcomeError, onBack }: Props) {
+export function ChatPanel({ conv, messages, integration, now, pendingAction, actionError, onTakeover, onResume, onSend, role, members, onAssign, onOutcome, onLostReason, outcomeBusy, outcomeError, onBack }: Props) {
   const [text, setText] = useState('');
   const [sending, setSending] = useState<Attempt | null>(null);
   const [attempt, setAttempt] = useState<Attempt | null>(null); // kept only after an ambiguous network failure
@@ -38,6 +39,7 @@ export function ChatPanel({ conv, messages, integration, now, pendingAction, act
   const [assignBusy, setAssignBusy] = useState(false);
   const [showInfo, setShowInfo] = useState(false); // phones: lead details are collapsed by default
   const [assignError, setAssignError] = useState<string | null>(null);
+  const [lostError, setLostError] = useState<string | null>(null);
   const canAssign = role !== 'manager';
   const assignee = members.find((m) => m.user_id === conv.assigned_to);
 
@@ -194,6 +196,19 @@ export function ChatPanel({ conv, messages, integration, now, pendingAction, act
             </>
           )}
         </div>
+        {conv.outcome === 'lost' && (
+          <label className="flex basis-full items-center gap-1.5">
+            <span className="text-muted-foreground">Причина отказа:</span>
+            <select
+              value={conv.lost_reason ?? ''} aria-label="Причина отказа" className="h-8 rounded-md border bg-card px-2 text-[13px]"
+              onChange={(e) => { void onLostReason((e.target.value || null) as LostReason | null).then((err) => setLostError(err)); }}
+            >
+              <option value="">не указана</option>
+              {(Object.keys(LOST_REASON_LABEL) as LostReason[]).map((k) => <option key={k} value={k}>{LOST_REASON_LABEL[k]}</option>)}
+            </select>
+          </label>
+        )}
+        {lostError && <p className="basis-full text-red-700">{lostError}</p>}
         {outcomeError && <p className="basis-full text-red-700">Не удалось сохранить итог: {outcomeError}</p>}
       </div>
 

@@ -1,4 +1,14 @@
-import type { Conversation, ConvState, Message, MsgStatus } from './types';
+import type { Conversation, ConvState, LostReason, Message, MsgStatus } from './types';
+
+export const LOST_REASON_LABEL: Record<LostReason, string> = {
+  price: 'Дорого',
+  no_time: 'Нет времени',
+  no_laptop: 'Нет ноутбука',
+  trust: 'Нет доверия',
+  other_topic: 'Нужно другое (например, видео)',
+  later: 'Не сейчас',
+  other: 'Другое',
+};
 
 export const SERVICE_WINDOW_MS = 24 * 60 * 60 * 1000;
 /** A pending message with no answer for this long is shown as "no confirmation". */

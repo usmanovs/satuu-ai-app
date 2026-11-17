@@ -262,6 +262,7 @@ export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Pr
               onSend={send}
               role={me?.role ?? 'manager'} members={members} onAssign={(u) => assignTo(selected.id, u)}
               onOutcome={(o) => runOutcome(selected.id, o)}
+              onLostReason={async (reason) => { const r = await backend.setLostReason(selected.id, reason); await refreshList(); return r.ok ? null : r.error; }}
               outcomeBusy={outcomeBusy === selected.id} outcomeError={outcomeError[selected.id]}
               onBack={closeChat}
             />

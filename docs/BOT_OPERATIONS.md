@@ -97,3 +97,14 @@ person's own, then asks the customer about their own goal. Still forbidden: impl
 Rule: "MONEY IN STORIES" in the Build Persona node of workflow 1. The regression suite no longer expects the disclaimer, and gained cases for som prices, the AI video course
 and the "no one-time payment" wording.
 When a customer asks "can I earn / is it worth it", the bot never opens with a plain yes ("да, можно заработать"): it starts with the story itself ("NO FLAT YES ABOUT EARNING" in the same rule).
+
+## Sales technique (2026-11-17)
+Rules in the "SALES TECHNIQUE" section of the Build Persona prompt (workflow 1): recap before the price, two-choice close, payment step as soon as the customer picks an option,
+real safety nets early (refund until the end of the first class, Mbank installments, recordings, the mentorship guarantee), an objection playbook, premium-first price list,
+real deadlines only (no invented scarcity, discounts or bonuses), and the AI video course as an entry step. Before each reply the bot also reads the real chat history from the
+database ("Recent Chat" node), so messages the team sent from outside the bot are known to it. The follow-up nudge (workflow 4) now adds one piece of real value and ends with a
+two-choice close. Further touches after the 24 h window need approved WhatsApp templates.
+
+## Reason lost
+When someone marks a chat "Не купит", a "Причина отказа" selector appears (Дорого, Нет времени, Нет ноутбука, Нет доверия, Нужно другое, Не сейчас, Другое); the owner sees the counts on the
+Команда page. Database: `20261117000018_lost_reason.sql` (`conversations.lost_reason`, `set_lost_reason`, cleared when the chat is reopened or marked won).

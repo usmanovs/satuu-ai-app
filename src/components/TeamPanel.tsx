@@ -3,9 +3,9 @@ import { Copy, KeyRound, Link2, Loader2, Trash2, UserPlus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { memberName, ROLE_LABEL } from '@/lib/format';
+import { LOST_REASON_LABEL, memberName, ROLE_LABEL } from '@/lib/format';
 import { NumbersSection } from '@/components/NumbersPanel';
-import type { InboxBackend, Me, Member, TeamStats, WaNumber } from '@/lib/types';
+import type { InboxBackend, LostReason, Me, Member, TeamStats, WaNumber } from '@/lib/types';
 
 interface Props {
   backend: InboxBackend;
@@ -32,6 +32,8 @@ export function TeamPanel({ backend, me, members, onMembersChanged, numbers, onN
   const [days, setDays] = useState(30);
   const [stats, setStats] = useState<TeamStats | null>(null);
   const [statsError, setStatsError] = useState<string | null>(null);
+  const [reasons, setReasons] = useState<Record<string, number>>({});
+  useEffect(() => { backend.lostReasons().then(setReasons).catch(() => setReasons({})); }, [backend, stats]);
   const isOwner = me.role === 'owner';
   const sees = me.role === 'manager' ? 'Моя статистика' : 'Эффективность менеджеров';
 
@@ -71,6 +73,12 @@ export function TeamPanel({ backend, me, members, onMembersChanged, numbers, onN
                 <Card label="Купили" value={stats.summary.won} />
                 <Card label="Не купили" value={stats.summary.lost} />
               </div>
+              {Object.keys(reasons).length > 0 && (
+                <p className="text-[13px] text-muted-foreground">
+                  <b className="text-foreground">Причины отказов:</b>{' '}
+                  {Object.entries(reasons).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k === 'none' ? 'без причины' : LOST_REASON_LABEL[k as LostReason] ?? k} ${n}`).join(' · ')}
+                </p>
+              )}
               <div className="overflow-x-auto rounded-lg border bg-card">
                 <table className="w-full min-w-[620px] text-left text-sm">
                   <thead className="border-b bg-muted/60 text-[12px] text-muted-foreground">
