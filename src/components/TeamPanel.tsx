@@ -23,8 +23,8 @@ const PERIODS = [{ days: 7, label: '7 дней' }, { days: 30, label: '30 дне
 function Card({ label, value, tone, Icon, iconTone = 'text-slate-500' }: { label: string; value: number | string; tone?: 'hot'; Icon: LucideIcon; iconTone?: string }) {
   return (
     <div className="rounded-lg border bg-card px-3 py-2.5" title={label}>
-      <Icon className={`size-5 ${iconTone}`} aria-label={label} role="img" />
-      <p className={`mt-1.5 text-xl font-bold ${tone === 'hot' ? 'text-red-700' : ''}`}>{value}</p>
+      <p className="flex items-center gap-1.5 text-[12px] font-medium leading-tight text-muted-foreground"><Icon className={`size-4 shrink-0 ${iconTone}`} aria-hidden />{label}</p>
+      <p className={`mt-1 text-xl font-bold ${tone === 'hot' ? 'text-red-700' : ''}`}>{value}</p>
     </div>
   );
 }
@@ -53,17 +53,17 @@ function FunnelSection({ backend, days }: { backend: InboxBackend; days: number 
           const n = f[s.key] as number;
           return (
             <div key={s.key} title={s.hint} className="rounded-lg border bg-card p-2.5">
-              <s.Icon className={`size-5 ${s.tone}`} aria-label={s.label} role="img" />
-              <p className="mt-1.5 text-xl font-bold leading-none">{n}</p>
+              <p className="flex items-center gap-1.5 text-[12px] font-medium leading-tight text-muted-foreground"><s.Icon className={`size-4 shrink-0 ${s.tone}`} aria-hidden />{s.label}</p>
+              <p className="mt-1 text-xl font-bold leading-none">{n}</p>
               <p className="mt-1 text-[12px] text-muted-foreground">{s.key === 'leads' ? 'все' : `${pct(n)}% от лидов`}</p>
             </div>
           );
         })}
       </div>
-      <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-muted-foreground">
-        <span className="inline-flex items-center gap-1.5" title="Не купили"><ThumbsDown className="size-4" aria-label="Не купили" role="img" /><b className="text-foreground">{f.lost}</b></span>
-        <span className="inline-flex items-center gap-1.5" title="Первое касание человека у горячих"><Flame className="size-4 text-orange-500" aria-hidden /><Timer className="size-4" aria-label="Время до первого касания человека" role="img" /><b className="text-foreground">{f.hot_first_touch_min === null ? 'нет данных' : `${f.hot_first_touch_min} мин`}</b></span>
-        <span className="inline-flex items-center gap-1.5" title="Горячие, которые сейчас ждут человека"><Flame className="size-4 text-orange-500" aria-hidden /><Users className="size-4" aria-label="Ждут человека" role="img" /><b className={f.hot_waiting_now > 0 ? 'text-red-600' : 'text-foreground'}>{f.hot_waiting_now}</b></span>
+      <p className="flex flex-wrap items-center gap-x-5 gap-y-1 text-[13px] text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5"><ThumbsDown className="size-4" aria-hidden />Не купили: <b className="text-foreground">{f.lost}</b></span>
+        <span className="inline-flex items-center gap-1.5" title="Сколько минут проходит до первого сообщения человека горячему лиду"><Timer className="size-4" aria-hidden />Горячие: первое касание человека: <b className="text-foreground">{f.hot_first_touch_min === null ? 'нет данных' : `${f.hot_first_touch_min} мин`}</b></span>
+        <span className="inline-flex items-center gap-1.5" title="Горячие, которые сейчас ждут человека"><Flame className="size-4 text-orange-500" aria-hidden />Горячие ждут человека: <b className={f.hot_waiting_now > 0 ? 'text-red-600' : 'text-foreground'}>{f.hot_waiting_now}</b></span>
       </p>
     </div>
   );

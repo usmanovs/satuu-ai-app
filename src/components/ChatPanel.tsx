@@ -164,8 +164,8 @@ export function ChatPanel({ conv, messages, integration, now, pendingAction, act
                 aria-label="Назначить менеджера" className="h-8 rounded-md border bg-card px-2 text-[13px]"
               >
                 <option value="">Не назначен</option>
-                {members.filter((m) => m.role === 'manager' && (m.active || m.user_id === conv.assigned_to)).map((m) => (
-                  <option key={m.user_id} value={m.user_id}>{memberName(m)}{m.active ? '' : ' (отключён)'}</option>
+                {members.filter((m) => m.active || m.user_id === conv.assigned_to).map((m) => (
+                  <option key={m.user_id} value={m.user_id}>{memberName(m)}{m.role === 'director' ? ' · директор' : m.role === 'owner' ? ' · владелец' : ''}{m.active ? '' : ' (отключён)'}</option>
                 ))}
               </select>
               {assignBusy && <Loader2 className="size-4 animate-spin text-muted-foreground" />}

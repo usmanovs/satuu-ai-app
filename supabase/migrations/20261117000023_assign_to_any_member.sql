@@ -1,0 +1,3 @@
+-- Conversations can be assigned to any active team member (sales manager, sales director or owner), not only managers.
+-- Same body as before except the target check: member_role(p_to) must not be null.
+-- (see assign_conversation in the live database)
