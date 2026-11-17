@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Copy, KeyRound, Link2, Loader2, Trash2, UserPlus } from 'lucide-react';
+import { BadgeCheck, Copy, Flame, Heart, KeyRound, Link2, Loader2, MessagesSquare, QrCode, ThumbsDown, Timer, Trash2, UserPlus, Users } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,13 +29,13 @@ function Card({ label, value, tone }: { label: string; value: number | string; t
   );
 }
 
-const FUNNEL_STEPS: { key: keyof FunnelStats; label: string; hint: string }[] = [
-  { key: 'leads', label: 'Лиды', hint: 'Новые диалоги за период' },
-  { key: 'dialog', label: 'Диалог', hint: 'Клиент написал 3 раза и больше' },
-  { key: 'interested', label: 'Интересуются', hint: 'Оценка AI 40 и выше' },
-  { key: 'hot', label: 'Горячие', hint: 'Оценка AI 80 и выше' },
-  { key: 'qr', label: 'Получили QR', hint: 'Бот отправил QR для оплаты' },
-  { key: 'won', label: 'Купили', hint: 'Отмечено «Купил»' },
+const FUNNEL_STEPS: { key: keyof FunnelStats; label: string; hint: string; Icon: LucideIcon; tone: string }[] = [
+  { key: 'leads', label: 'Лиды', hint: 'Новые диалоги за период', Icon: Users, tone: 'text-slate-500' },
+  { key: 'dialog', label: 'Диалог', hint: 'Клиент написал 3 раза и больше', Icon: MessagesSquare, tone: 'text-sky-500' },
+  { key: 'interested', label: 'Интересуются', hint: 'Оценка AI 40 и выше', Icon: Heart, tone: 'text-pink-500' },
+  { key: 'hot', label: 'Горячие', hint: 'Оценка AI 80 и выше', Icon: Flame, tone: 'text-orange-500' },
+  { key: 'qr', label: 'Получили QR', hint: 'Бот отправил QR для оплаты', Icon: QrCode, tone: 'text-violet-500' },
+  { key: 'won', label: 'Купили', hint: 'Отмечено «Купил»', Icon: BadgeCheck, tone: 'text-emerald-500' },
 ];
 
 function FunnelSection({ backend, days }: { backend: InboxBackend; days: number }) {
@@ -52,17 +53,17 @@ function FunnelSection({ backend, days }: { backend: InboxBackend; days: number 
           const n = f[s.key] as number;
           return (
             <div key={s.key} title={s.hint} className="rounded-lg border bg-card p-2.5">
-              <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{s.label}</p>
-              <p className="mt-0.5 text-xl font-bold leading-none">{n}</p>
+              <s.Icon className={`size-5 ${s.tone}`} aria-label={s.label} role="img" />
+              <p className="mt-1.5 text-xl font-bold leading-none">{n}</p>
               <p className="mt-1 text-[12px] text-muted-foreground">{s.key === 'leads' ? 'все' : `${pct(n)}% от лидов`}</p>
             </div>
           );
         })}
       </div>
-      <p className="text-[13px] text-muted-foreground">
-        Не купили: <b className="text-foreground">{f.lost}</b>
-        {' · '}Первое касание человека у горячих: <b className="text-foreground">{f.hot_first_touch_min === null ? 'пока нет данных' : `${f.hot_first_touch_min} мин`}</b>
-        {' · '}Сейчас ждут человека: <b className={f.hot_waiting_now > 0 ? 'text-red-700' : 'text-foreground'}>{f.hot_waiting_now}</b>
+      <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[13px] text-muted-foreground">
+        <span className="inline-flex items-center gap-1.5" title="Не купили"><ThumbsDown className="size-4" aria-label="Не купили" role="img" /><b className="text-foreground">{f.lost}</b></span>
+        <span className="inline-flex items-center gap-1.5" title="Первое касание человека у горячих"><Flame className="size-4 text-orange-500" aria-hidden /><Timer className="size-4" aria-label="Время до первого касания человека" role="img" /><b className="text-foreground">{f.hot_first_touch_min === null ? 'нет данных' : `${f.hot_first_touch_min} мин`}</b></span>
+        <span className="inline-flex items-center gap-1.5" title="Горячие, которые сейчас ждут человека"><Flame className="size-4 text-orange-500" aria-hidden /><Users className="size-4" aria-label="Ждут человека" role="img" /><b className={f.hot_waiting_now > 0 ? 'text-red-600' : 'text-foreground'}>{f.hot_waiting_now}</b></span>
       </p>
     </div>
   );
