@@ -26,6 +26,9 @@ export function LeadBadge({ c }: { c: Conversation }) {
   return <Badge tone={leadTone[c.lead_label]} title={c.lead_reason ?? undefined}>{LEAD_LABEL[c.lead_label]} · {c.lead_score}</Badge>;
 }
 
+/** Short status labels for the crowded chat-list row (the full text is in the tooltip). */
+const STATE_SHORT: Record<ConvState, string> = { ai_active: 'AI', human_requested: 'Человек', human_handling: 'Менеджер' };
+
 export const stateTone = { ai_active: 'emerald', human_requested: 'amber', human_handling: 'blue' } as const;
 
 function initials(name: string) {
@@ -143,9 +146,9 @@ export function ConversationList({ conversations, loadError, selectedId, onSelec
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center justify-between gap-2">
                       <span className="flex min-w-0 items-center gap-1.5">
-                        <span className={cn('truncate text-[15px]', unread ? 'font-bold' : 'font-medium')}>{name}</span>
+                        <span className={cn('min-w-[7ch] truncate text-[15px]', unread ? 'font-bold' : 'font-medium')}>{name}</span>
                         {isHotAlert(c) && <span className="fire shrink-0 text-base" role="img" aria-label="Горячий лид" title={`Горячий лид · ${c.lead_score}/100${c.lead_reason ? ` — ${c.lead_reason}` : ''}`}>🔥</span>}
-                        <Badge tone={stateTone[c.state]} className="shrink-0">{STATE_LABEL[c.state]}</Badge>
+                        <Badge tone={stateTone[c.state]} className="shrink-0" title={STATE_LABEL[c.state]}>{STATE_SHORT[c.state]}</Badge>
                         <span className="shrink-0"><LeadBadge c={c} /></span>
                       </span>
                       <span className={cn('shrink-0 text-xs', unread ? 'font-semibold text-primary' : 'text-muted-foreground')}>{formatListTime(c.last_message_at, now)}</span>
