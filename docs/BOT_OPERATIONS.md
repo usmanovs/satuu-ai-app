@@ -53,3 +53,11 @@ whenever the bot describes his background it must name both parts. It never says
 titles other than tech lead or project details, and never implies endorsement. His LinkedIn
 (https://www.linkedin.com/in/seyitbek/) is shared when a customer asks who teaches or wants to verify him.
 Share link for leads: https://wa.me/84582572652
+In Kyrgyz the federal-agencies part is fixed wording from the owner: "USDA, CFPB жана CMS сыяктуу федералдык мекемелердин IT долбоорлорун жетектеген" (he led IT projects for federal agencies).
+The prompt also states that live classes are held on Zoom (the bot gives no link or joining steps).
+
+## Second WhatsApp number
++996 700 264 555 (Cloud API phone number id 1474878105703295) was added to the same WhatsApp business account, so the same bot
+workflow, templates and webhook serve both numbers; replies go out from the number the customer wrote to. It is listed in
+`wa_numbers` ("Номер для лидов"). Registering a new number needs a 6-digit PIN chosen by the owner (never stored in the repo).
+Chat-list tag under each chat shows which number the customer wrote to.
