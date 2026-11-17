@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { BadgeCheck, Copy, Flame, Heart, KeyRound, Link2, Loader2, MessagesSquare, QrCode, ThumbsDown, Timer, Trash2, UserPlus, Users } from 'lucide-react';
+import { Bot, BadgeCheck, Copy, Flame, Hand, MessageSquare, UserCheck, UserX, UsersRound, Heart, KeyRound, Link2, Loader2, MessagesSquare, QrCode, ThumbsDown, Timer, Trash2, UserPlus, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -20,11 +20,11 @@ interface Props {
 
 const PERIODS = [{ days: 7, label: '7 дней' }, { days: 30, label: '30 дней' }, { days: 90, label: '90 дней' }];
 
-function Card({ label, value, tone }: { label: string; value: number | string; tone?: 'hot' }) {
+function Card({ label, value, tone, Icon, iconTone = 'text-slate-500' }: { label: string; value: number | string; tone?: 'hot'; Icon: LucideIcon; iconTone?: string }) {
   return (
-    <div className="rounded-lg border bg-card px-3 py-2.5">
-      <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
-      <p className={`mt-0.5 text-xl font-bold ${tone === 'hot' ? 'text-red-700' : ''}`}>{value}</p>
+    <div className="rounded-lg border bg-card px-3 py-2.5" title={label}>
+      <Icon className={`size-5 ${iconTone}`} aria-label={label} role="img" />
+      <p className={`mt-1.5 text-xl font-bold ${tone === 'hot' ? 'text-red-700' : ''}`}>{value}</p>
     </div>
   );
 }
@@ -132,14 +132,14 @@ export function TeamPanel({ backend, me, members, onMembersChanged, numbers, onN
           {stats && (
             <>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                <Card label="Диалогов" value={stats.summary.total} />
-                <Card label="AI отвечает" value={stats.summary.ai_active} />
-                <Card label="Нужен человек" value={stats.summary.human_requested} />
-                <Card label="У менеджера" value={stats.summary.human_handling} />
-                {me.role !== 'manager' && <Card label="Не назначены" value={stats.summary.unassigned} />}
-                <Card label="Горячие (открытые)" value={stats.summary.hot_open} tone="hot" />
-                <Card label="Купили" value={stats.summary.won} />
-                <Card label="Не купили" value={stats.summary.lost} />
+                <Card label="Диалогов" value={stats.summary.total} Icon={MessageSquare} iconTone="text-sky-500" />
+                <Card label="AI отвечает" value={stats.summary.ai_active} Icon={Bot} iconTone="text-emerald-500" />
+                <Card label="Нужен человек" value={stats.summary.human_requested} Icon={Hand} iconTone="text-amber-500" />
+                <Card label="У менеджера" value={stats.summary.human_handling} Icon={UserCheck} iconTone="text-blue-500" />
+                {me.role !== 'manager' && <Card label="Не назначены" value={stats.summary.unassigned} Icon={UsersRound} />}
+                <Card label="Горячие (открытые)" value={stats.summary.hot_open} tone="hot" Icon={Flame} iconTone="text-orange-500" />
+                <Card label="Купили" value={stats.summary.won} Icon={BadgeCheck} iconTone="text-emerald-500" />
+                <Card label="Не купили" value={stats.summary.lost} Icon={UserX} />
               </div>
               {Object.keys(reasons).length > 0 && (
                 <p className="text-[13px] text-muted-foreground">
