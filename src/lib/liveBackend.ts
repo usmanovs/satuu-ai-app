@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type {
-  ActionResult, BotAlert, ChangeEvent, Conversation, InboxBackend, IntegrationStatus, LinkResult, Me, Member, Message, NumberPatch, WaNumber, Outcome, OutcomeResult, SendInput, SendResult, SimpleResult, StateAction, TeamStats,
+  ActionResult, BotAlert, ChangeEvent, Conversation, FunnelStats, SalesReport, InboxBackend, IntegrationStatus, LinkResult, Me, Member, Message, NumberPatch, WaNumber, Outcome, OutcomeResult, SendInput, SendResult, SimpleResult, StateAction, TeamStats,
 } from './types';
 import { countUnread } from './format';
 
@@ -122,6 +122,18 @@ export function createLiveBackend(supabase: SupabaseClient, functionsBaseUrl: st
     async setLostReason(conversationId, reason): Promise<SimpleResult> {
       const { error } = await supabase.rpc('set_lost_reason', { p_conversation: conversationId, p_reason: reason });
       return error ? { ok: false, error: 'Не удалось сохранить причину. Попробуйте ещё раз.' } : { ok: true };
+    },
+
+    async funnelStats(days): Promise<FunnelStats> {
+      const { data, error } = await supabase.rpc('funnel_stats', { p_days: days });
+      if (error) throw new Error(error.message);
+      return data as FunnelStats;
+    },
+
+    async listReports(): Promise<SalesReport[]> {
+      const { data, error } = await supabase.from('sales_reports').select('id, created_at, period_start, period_end, body').order('created_at', { ascending: false }).limit(8);
+      if (error) throw new Error(error.message);
+      return (data ?? []) as SalesReport[];
     },
 
     async lostReasons(): Promise<Record<string, number>> {

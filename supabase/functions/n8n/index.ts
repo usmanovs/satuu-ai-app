@@ -1,6 +1,7 @@
 // n8n -> Supabase contracts. Auth: `Authorization: Bearer <integration key>`.
 // Routes (POST): /ingest-message, /ingest-echo, /lead-context, /lead-score, /ai-permission, /request-human,
-// /claim-human-send, /record-outbound, /message-status, /followup-candidates, /followup-claim, /need-manager
+// /claim-human-send, /record-outbound, /message-status, /followup-candidates, /followup-claim, /need-manager,
+// /weekly-digest-data, /weekly-digest-save
 import {
   errorResponse, HttpError, json, preflight, readJson, requireIntegration, rpc,
 } from '../_shared/lib.ts';
@@ -247,6 +248,21 @@ Deno.serve(async (req) => {
         });
         // 202: receipt stored but the message row is not known yet; it is applied when the message is recorded.
         return json(result, result.matched ? 200 : 202);
+      }
+
+      case 'weekly-digest-data': {
+        // Numbers for the Monday sales report (funnel, concerns, proof shown, stalled hot leads).
+        const result = await rpc('weekly_digest_data', { p_business: businessId });
+        return json(result);
+      }
+
+      case 'weekly-digest-save': {
+        const result = await rpc('save_sales_report', {
+          p_business: businessId,
+          p_body: reqStr(body, 'body', 6000),
+          p_data: body.data ?? null,
+        });
+        return json(result);
       }
 
       default:

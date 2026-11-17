@@ -38,6 +38,17 @@ export function needsManager(c: Conversation): boolean {
   return Date.parse(c.manager_last_read_at) < Date.parse(c.manager_needed_at);
 }
 
+/** Minutes a hot lead has been waiting for a person (null = not a hot lead waiting for a human). */
+export function hotWaitingMin(c: Conversation, now: number = Date.now()): number | null {
+  if (!c.hot_alerted_at || c.outcome) return null;
+  const alerted = Date.parse(c.hot_alerted_at);
+  if (c.last_manager_message_at && Date.parse(c.last_manager_message_at) >= alerted) return null;
+  return Math.max(0, Math.floor((now - alerted) / 60_000));
+}
+export function formatWait(min: number): string {
+  return min < 60 ? `${min} мин` : `${Math.floor(min / 60)} ч ${min % 60} мин`;
+}
+
 export function isUnread(c: Conversation): boolean {
   if (!c.last_inbound_at) return false;
   if (!c.manager_last_read_at) return true;

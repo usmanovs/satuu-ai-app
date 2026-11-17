@@ -2,7 +2,7 @@ import { ArrowDownWideNarrow, Search } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { displayName, formatListTime, isHotAlert, isUnread, memberName, needsManager, STATE_LABEL, unreadBadge } from '@/lib/format';
+import { displayName, formatListTime, formatWait, hotWaitingMin, isHotAlert, isUnread, memberName, needsManager, STATE_LABEL, unreadBadge } from '@/lib/format';
 import type { Conversation, ConvState, LeadLabel, Member, WaNumber } from '@/lib/types';
 
 export type Filter = 'all' | 'needs_manager' | ConvState;
@@ -135,6 +135,7 @@ export function ConversationList({ conversations, loadError, selectedId, onSelec
           {visible.map((c) => {
             const unread = isUnread(c);
             const name = displayName(c);
+            const waiting = hotWaitingMin(c, now);
             return (
               <li key={c.id}>
                 <button
@@ -157,7 +158,7 @@ export function ConversationList({ conversations, loadError, selectedId, onSelec
                       <span className={cn('truncate text-[13px]', unread ? 'text-foreground' : 'text-muted-foreground')}>{c.last_message_preview ?? '—'}</span>
                       {unread && <span className="ml-auto grid h-5 min-w-5 shrink-0 place-items-center rounded-full bg-primary px-1.5 text-[11px] font-bold leading-none text-primary-foreground" aria-label={`Непрочитано: ${unreadBadge(c)}`}>{unreadBadge(c)}</span>}
                     </span>
-                    <span className="mt-1.5 flex flex-wrap items-center gap-1.5 empty:hidden">{needsManager(c) && <span className="manager-flag inline-flex items-center gap-1 rounded-full border border-violet-300 bg-violet-50 px-2 py-0.5 text-[11px] font-bold text-violet-800" title={c.manager_needed_reason ?? 'AI просит подключить менеджера'}><span className="wave" role="img" aria-label="Нужен менеджер">🙋</span>Нужен менеджер</span>}{canFilterByAssignee && numbers.length > 1 && <span className="text-[11px] text-muted-foreground" title="Номер WhatsApp, на который написал клиент">☎ {numbers.find((n) => n.id === c.wa_number_id)?.label ?? '—'}</span>}{canFilterByAssignee && c.assigned_to && <span className="text-[11px] text-muted-foreground">{`→ ${memberName(members.find((m) => m.user_id === c.assigned_to))}`}</span>}</span>
+                    <span className="mt-1.5 flex flex-wrap items-center gap-1.5 empty:hidden">{waiting !== null && <span className={cn('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold', waiting >= 15 ? 'border-red-300 bg-red-50 text-red-800' : 'border-orange-300 bg-orange-50 text-orange-800')} title="Горячий лид ждёт человека: напишите или отправьте голосовое">⏱ ждёт {formatWait(waiting)}</span>}{needsManager(c) && <span className="manager-flag inline-flex items-center gap-1 rounded-full border border-violet-300 bg-violet-50 px-2 py-0.5 text-[11px] font-bold text-violet-800" title={c.manager_needed_reason ?? 'AI просит подключить менеджера'}><span className="wave" role="img" aria-label="Нужен менеджер">🙋</span>Нужен менеджер</span>}{canFilterByAssignee && numbers.length > 1 && <span className="text-[11px] text-muted-foreground" title="Номер WhatsApp, на который написал клиент">☎ {numbers.find((n) => n.id === c.wa_number_id)?.label ?? '—'}</span>}{canFilterByAssignee && c.assigned_to && <span className="text-[11px] text-muted-foreground">{`→ ${memberName(members.find((m) => m.user_id === c.assigned_to))}`}</span>}</span>
                   </span>
                 </button>
               </li>

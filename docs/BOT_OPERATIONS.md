@@ -116,3 +116,9 @@ The bot still answers a hidden chat if the customer writes again.
 ## One reply per burst, short replies
 The bot waits 12 seconds (was 6) before answering, so a customer who sends several messages in a row gets ONE reply. A length limit (about 600 characters) applies even when
 the customer asks for "full info".
+
+## Hot leads, funnel, weekly report (2026-11-17)
+- **Hot lead waiting for a human:** a lead rated 80+ with no person's message since gets a red/orange "⏱ ждёт N мин" badge in the chat list (red after 15 min) and a "ждут человека" pill in the header; the dashboard can also show a browser notification (bell button asks for permission).
+- **Funnel** (Команда page, owner): leads, dialog (3+ messages), interested (score 40+), hot (80+), got QR, bought, lost, time to first human touch for hot leads. Hidden and test chats are ignored.
+- **Workflow 9 "Report: Weekly Sales Digest":** Mondays 10:30 Bishkek, writes a short Russian report from `weekly_digest_data` (funnel vs last week, objections, which proof was shown, stalled hot leads, silent-after-price chats) and saves it to `sales_reports`; the owner reads it on the Команда page. Run it by hand with "Run Now".
+- **Students from Russia:** policy rule in the Build Persona prompt: no payment details, honest explanation about blocked AI tools, chat flagged for the team; numbers starting with 7 are asked for their country before payment (Russia and Kazakhstan share +7).

@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { LOST_REASON_LABEL, memberName, ROLE_LABEL } from '@/lib/format';
 import { NumbersSection } from '@/components/NumbersPanel';
-import type { InboxBackend, LostReason, Me, Member, TeamStats, WaNumber } from '@/lib/types';
+import type { FunnelStats, InboxBackend, LostReason, Me, Member, SalesReport, TeamStats, WaNumber } from '@/lib/types';
 
 interface Props {
   backend: InboxBackend;
@@ -25,6 +25,72 @@ function Card({ label, value, tone }: { label: string; value: number | string; t
       <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">{label}</p>
       <p className={`mt-0.5 text-xl font-bold ${tone === 'hot' ? 'text-red-700' : ''}`}>{value}</p>
     </div>
+  );
+}
+
+const FUNNEL_STEPS: { key: keyof FunnelStats; label: string; hint: string }[] = [
+  { key: 'leads', label: 'Лиды', hint: 'Новые диалоги за период' },
+  { key: 'dialog', label: 'Диалог', hint: 'Клиент написал 3 раза и больше' },
+  { key: 'interested', label: 'Интересуются', hint: 'Оценка AI 40 и выше' },
+  { key: 'hot', label: 'Горячие', hint: 'Оценка AI 80 и выше' },
+  { key: 'qr', label: 'Получили QR', hint: 'Бот отправил QR для оплаты' },
+  { key: 'won', label: 'Купили', hint: 'Отмечено «Купил»' },
+];
+
+function FunnelSection({ backend, days }: { backend: InboxBackend; days: number }) {
+  const [f, setF] = useState<FunnelStats | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  useEffect(() => { setF(null); backend.funnelStats(days).then((r) => { setF(r); setErr(null); }).catch((e) => setErr(e instanceof Error ? e.message : 'ошибка')); }, [backend, days]);
+  if (err) return <p className="text-[13px] text-red-700">Воронка не загрузилась: {err}</p>;
+  if (!f) return null;
+  const pct = (n: number) => (f.leads > 0 ? Math.round((n / f.leads) * 100) : 0);
+  return (
+    <div className="space-y-2">
+      <h3 className="text-sm font-bold">Воронка</h3>
+      <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+        {FUNNEL_STEPS.map((s) => {
+          const n = f[s.key] as number;
+          return (
+            <div key={s.key} title={s.hint} className="rounded-lg border bg-card p-2.5">
+              <p className="text-[11px] uppercase tracking-wide text-muted-foreground">{s.label}</p>
+              <p className="mt-0.5 text-xl font-bold leading-none">{n}</p>
+              <p className="mt-1 text-[12px] text-muted-foreground">{s.key === 'leads' ? 'все' : `${pct(n)}% от лидов`}</p>
+            </div>
+          );
+        })}
+      </div>
+      <p className="text-[13px] text-muted-foreground">
+        Не купили: <b className="text-foreground">{f.lost}</b>
+        {' · '}Первое касание человека у горячих: <b className="text-foreground">{f.hot_first_touch_min === null ? 'пока нет данных' : `${f.hot_first_touch_min} мин`}</b>
+        {' · '}Сейчас ждут человека: <b className={f.hot_waiting_now > 0 ? 'text-red-700' : 'text-foreground'}>{f.hot_waiting_now}</b>
+      </p>
+    </div>
+  );
+}
+
+function ReportsSection({ backend }: { backend: InboxBackend }) {
+  const [reports, setReports] = useState<SalesReport[] | null>(null);
+  useEffect(() => { backend.listReports().then(setReports).catch(() => setReports([])); }, [backend]);
+  if (reports === null) return null;
+  const [latest, ...older] = reports;
+  const when = (iso: string) => new Date(iso).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' });
+  return (
+    <section className="space-y-2">
+      <h2 className="text-base font-bold">Еженедельный отчёт по продажам</h2>
+      {!latest && <p className="rounded-md border bg-card p-3 text-[13px] text-muted-foreground">Первый отчёт появится в понедельник утром.</p>}
+      {latest && (
+        <article className="rounded-lg border bg-card p-4">
+          <p className="mb-2 text-[12px] text-muted-foreground">Отчёт от {when(latest.created_at)}</p>
+          <p className="whitespace-pre-wrap text-[14px] leading-relaxed">{latest.body}</p>
+        </article>
+      )}
+      {older.map((r) => (
+        <details key={r.id} className="rounded-md border bg-card px-3 py-2">
+          <summary className="cursor-pointer text-[13px] text-muted-foreground">Отчёт от {when(r.created_at)}</summary>
+          <p className="mt-2 whitespace-pre-wrap text-[14px] leading-relaxed">{r.body}</p>
+        </details>
+      ))}
+    </section>
   );
 }
 
@@ -59,6 +125,7 @@ export function TeamPanel({ backend, me, members, onMembersChanged, numbers, onN
               ))}
             </div>
           </div>
+          {isOwner && <FunnelSection backend={backend} days={days} />}
           {statsError && <p className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">Не удалось загрузить статистику: {statsError}</p>}
           {!stats && !statsError && <p className="py-6 text-center text-sm text-muted-foreground">Загрузка…</p>}
           {stats && (
@@ -117,6 +184,8 @@ export function TeamPanel({ backend, me, members, onMembersChanged, numbers, onN
             </>
           )}
         </section>
+
+        {isOwner && <ReportsSection backend={backend} />}
 
         <NumbersSection backend={backend} me={me} members={members} numbers={numbers} onChanged={onNumbersChanged} />
 

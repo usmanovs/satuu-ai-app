@@ -58,10 +58,20 @@ export interface Conversation {
   outcome_at: string | null;
   /** Why the lead said no; set by the person who marked the chat as lost. */
   lost_reason?: LostReason | null;
+  /** When the AI first rated the lead hot (80+). */
+  hot_alerted_at?: string | null;
+  /** When a person last wrote in this chat. */
+  last_manager_message_at?: string | null;
   contacts: { wa_id: string; display_name: string | null };
   /** How many customer messages arrived since the manager last opened the chat (filled by the backend). */
   unread_count?: number;
 }
+
+export interface FunnelStats {
+  leads: number; dialog: number; interested: number; hot: number; qr: number; won: number; lost: number;
+  hot_first_touch_min: number | null; hot_waiting_now: number;
+}
+export interface SalesReport { id: string; created_at: string; period_start: string; period_end: string; body: string }
 
 export interface Message {
   id: string;
@@ -134,6 +144,8 @@ export interface InboxBackend {
   action(conversationId: string, action: StateAction): Promise<ActionResult>;
   setOutcome(conversationId: string, outcome: Outcome | 'open'): Promise<OutcomeResult>;
   setLostReason(conversationId: string, reason: LostReason | null): Promise<SimpleResult>;
+  funnelStats(days: number): Promise<FunnelStats>;
+  listReports(): Promise<SalesReport[]>;
   /** Counts of lost chats by reason ('none' = no reason given). Only what the signed-in person may see. */
   lostReasons(): Promise<Record<string, number>>;
   me(): Promise<Me>;

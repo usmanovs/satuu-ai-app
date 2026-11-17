@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { LogOut, MessageSquareText, Moon, Radio, Sun, Unplug, Users } from 'lucide-react';
+import { Bell, LogOut, MessageSquareText, Moon, Radio, Sun, Timer, Unplug, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ChatPanel } from '@/components/ChatPanel';
 import { ConversationList, type Filter } from '@/components/ConversationList';
 import { TeamPanel } from '@/components/TeamPanel';
-import { formatAgo, isHotAlert, isUnread, memberName, needsManager, ROLE_LABEL } from '@/lib/format';
+import { displayName, formatAgo, hotWaitingMin, isHotAlert, isUnread, memberName, needsManager, ROLE_LABEL } from '@/lib/format';
 import type { BotAlert, Conversation, InboxBackend, IntegrationStatus, Me, Member, Message, Outcome, SendInput, SendResult, WaNumber } from '@/lib/types';
 
 interface Props {
@@ -167,6 +167,22 @@ export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Pr
 
   const unreadCount = (convs ?? []).filter(isUnread).length;
   const hotCount = (convs ?? []).filter(isHotAlert).length;
+  const waitingCount = (convs ?? []).filter((c) => hotWaitingMin(c, now) !== null).length;
+  const [notifPerm, setNotifPerm] = useState<NotificationPermission | 'none'>(typeof Notification === 'undefined' ? 'none' : Notification.permission);
+  const seenHot = useRef<Set<string> | null>(null);
+  // a new hot lead appears: show a browser notification (only after the first load, and only if allowed)
+  useEffect(() => {
+    if (!convs) return;
+    const hotNow = convs.filter((c) => hotWaitingMin(c, Date.now()) !== null);
+    if (seenHot.current === null) { seenHot.current = new Set(hotNow.map((c) => c.id)); return; }
+    for (const c of hotNow) {
+      if (seenHot.current.has(c.id)) continue;
+      seenHot.current.add(c.id);
+      if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        try { new Notification('🔥 Горячий лид ждёт человека', { body: `${displayName(c)}${c.lead_reason ? `: ${c.lead_reason}` : ''}` }); } catch { /* notifications are optional */ }
+      }
+    }
+  }, [convs]);
   const managerCount = (convs ?? []).filter(needsManager).length;
   const aiChecked = integration?.last_ai_check_at ?? null;
 
@@ -203,6 +219,20 @@ export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Pr
               <span className="wave text-sm" role="img" aria-label="Нужен менеджер">🙋</span>
               {managerCount}<span className="hidden lg:inline"> {managerCount === 1 ? 'нужен менеджер' : 'нужны менеджеру'}</span>
             </button>
+          )}
+          {waitingCount > 0 && (
+            <button
+              onClick={() => { setSortByLead(true); setView('inbox'); setSelectedId(null); }}
+              title="Горячие лиды ждут человека: напишите или отправьте голосовое в течение 15 минут"
+              className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-red-300 bg-red-50 px-2.5 py-1 text-xs font-bold text-red-800"
+            >
+              <Timer className="size-3.5" />{waitingCount}<span className="hidden lg:inline"> ждут человека</span>
+            </button>
+          )}
+          {notifPerm === 'default' && (
+            <Button variant="ghost" size="icon" aria-label="Включить уведомления о горячих лидах" title="Уведомления о горячих лидах" onClick={() => { void Notification.requestPermission().then(setNotifPerm); }}>
+              <Bell />
+            </Button>
           )}
           {hotCount > 0 && (
             <button
