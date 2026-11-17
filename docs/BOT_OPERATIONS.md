@@ -90,3 +90,9 @@ program or its options. Rule: "AI VIDEO COURSE" in the Build Persona node of wor
 The AI video course instructor is Oskon Akmatov (the course page and his Instagram spell it Akmatov), creator of popular Kyrgyz AI music videos, some with over 500,000 views
 (owner). The bot names him and shares https://www.instagram.com/oskon_akmatov/ when asked who teaches it or to see his work, and adds nothing else about him.
 It also says the course is recorded and self-paced (stated on the course page).
+
+## Money in student stories
+No disclaimer sentence after a story with money (owner, 2026-11-17: "individual result, not a promise" sounded defensive). The bot states the result plainly as that
+person's own, then asks the customer about their own goal. Still forbidden: implying the customer will earn the same, calling it typical or average, adding sources or timelines.
+Rule: "MONEY IN STORIES" in the Build Persona node of workflow 1. The regression suite no longer expects the disclaimer, and gained cases for som prices, the AI video course
+and the "no one-time payment" wording.
