@@ -145,9 +145,9 @@ export function ConversationList({ conversations, loadError, selectedId, onSelec
                 >
                   <span className="mt-0.5 grid size-10 shrink-0 place-items-center rounded-full bg-muted text-sm font-semibold text-muted-foreground">{initials(name)}</span>
                   <span className="min-w-0 flex-1">
-                    <span className="flex items-center justify-between gap-2">
-                      <span className="flex min-w-0 items-center gap-1.5">
-                        <span className={cn('min-w-[7ch] truncate text-[15px]', unread ? 'font-bold' : 'font-medium')}>{name}</span>
+                    <span className="flex items-start justify-between gap-2">
+                      <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1">
+                        <span className={cn('min-w-[7ch] max-w-full truncate text-[15px]', unread ? 'font-bold' : 'font-medium')}>{name}</span>
                         {isHotAlert(c) && <span className="fire shrink-0 text-base" role="img" aria-label="Горячий лид" title={`Горячий лид · ${c.lead_score}/100${c.lead_reason ? ` — ${c.lead_reason}` : ''}`}>🔥</span>}
                         <Badge tone={stateTone[c.state]} className="shrink-0" title={STATE_LABEL[c.state]}>{STATE_SHORT[c.state]}</Badge>{c.assigned_to && <span className="inline-flex max-w-[7rem] shrink-0 items-center gap-1 rounded-full border border-blue-500/50 bg-blue-500/15 px-2 py-0.5 text-[11px] font-semibold text-foreground" title="Ответственный менеджер"><UserCheck className="size-3 shrink-0 text-blue-500" aria-hidden /><span className="truncate">{memberName(members.find((m) => m.user_id === c.assigned_to))}</span></span>}
                         <span className="shrink-0"><LeadBadge c={c} /></span>
