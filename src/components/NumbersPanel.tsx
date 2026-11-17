@@ -1,3 +1,4 @@
+import { countryOf } from '@/lib/country';
 import { useState } from 'react';
 import { ChevronDown, Loader2, Phone, Plus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -48,7 +49,7 @@ function NumberRow({ backend, me, members, n, onChanged }: { backend: InboxBacke
       <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[13px]">
         <Phone className="size-3.5 shrink-0 text-muted-foreground" />
         <b className="truncate">{n.label}</b>
-        {n.display_phone && <span className="hidden text-muted-foreground sm:inline">{n.display_phone}</span>}
+        {n.display_phone && <span className="hidden text-muted-foreground sm:inline">{(() => { const k = countryOf(n.display_phone); return k ? <span title={k.name} className="mr-1">{k.flag}</span> : null; })()}{n.display_phone}</span>}
         <Badge tone={n.owner_user_id ? 'emerald' : 'neutral'} className="shrink-0">{n.owner_user_id ? memberName(ownerMember) : 'Общий'}</Badge>
         {!n.active && <Badge tone="amber" className="shrink-0">отключён</Badge>}
         <ChevronDown className={`ml-auto size-4 shrink-0 text-muted-foreground transition-transform ${open ? 'rotate-180' : ''}`} />

@@ -1,3 +1,4 @@
+import { countryOf } from '@/lib/country';
 import { useEffect, useRef, useState } from 'react';
 import { ArrowLeft, Bot, Check, ChevronDown, Hand, Loader2, MessageCircle, Phone, RotateCcw, Send, TriangleAlert, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -108,7 +109,7 @@ export function ChatPanel({ conv, messages, integration, now, pendingAction, act
             <Badge tone={stateTone[conv.state]}>{STATE_LABEL[conv.state]}</Badge>
             <LeadBadge c={conv} />
           </div>
-          <p className="truncate text-xs text-muted-foreground">+{conv.contacts.wa_id}</p>
+          <p className="truncate text-xs text-muted-foreground">{(() => { const k = countryOf(conv.contacts.wa_id); return k ? <span title={k.name} aria-label={k.name} className="mr-1">{k.flag}</span> : null; })()}+{conv.contacts.wa_id}</p>
         </div>
         <div className="flex w-full shrink-0 gap-2 sm:w-auto [&>button]:min-w-0 [&>button]:flex-1 sm:[&>button]:flex-none">
           <a

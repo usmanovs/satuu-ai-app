@@ -132,3 +132,7 @@ Migration: `20261117000021_message_media.sql`.
 
 ## Lead scoring fix (2026-11-17)
 The scorer ("Score Lead" in workflow 1) once rated a chat 20 because the LAST message was only "Ало", ignoring a clear goal stated earlier. The prompt now says to judge the whole conversation (a short or empty last message never lowers the score), and the scorer reads the last 20 non-placeholder messages (was 12; the database caps it at 30).
+
+## Live classes Demo Day guarantee (2026-11-17)
+Owner decision: the $349 Live classes option comes with a conditional refund guarantee: the student attends the live classes and does the homework, and if they have no live website by Demo Day (December 11, 2026), they get a refund. Rule: "LIVE CLASSES DEMO DAY GUARANTEE" in the Build Persona node of workflow 1 (the mentorship rule and the "RISK REVERSAL EARLY" list were updated to match).
+The bot states it for Live classes only (never for Recordings or the mentorship), plainly, in the customer's language, when someone hesitates or asks about risk, refunds or guarantees. It is not an earnings promise. The bot does not know the conditions' details (how much attendance or homework counts, what counts as a "live website", how and until when to claim, how money is returned): it says so and flags the chat for the team. If you decide these terms, add them to that rule. The old rule stays: refund on request until the end of the first class.
