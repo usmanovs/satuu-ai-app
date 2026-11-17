@@ -108,3 +108,11 @@ two-choice close. Further touches after the 24 h window need approved WhatsApp t
 ## Reason lost
 When someone marks a chat "Не купит", a "Причина отказа" selector appears (Дорого, Нет времени, Нет ноутбука, Нет доверия, Нужно другое, Не сейчас, Другое); the owner sees the counts on the
 Команда page. Database: `20261117000018_lost_reason.sql` (`conversations.lost_reason`, `set_lost_reason`, cleared when the chat is reopened or marked won).
+
+## Hidden chats
+`conversations.hidden_at` hides a chat from the dashboard and from team statistics without deleting it (clear it to show the chat again). The test chats on the +84 number were hidden on 2026-11-17.
+The bot still answers a hidden chat if the customer writes again.
+
+## One reply per burst, short replies
+The bot waits 12 seconds (was 6) before answering, so a customer who sends several messages in a row gets ONE reply. A length limit (about 600 characters) applies even when
+the customer asks for "full info".

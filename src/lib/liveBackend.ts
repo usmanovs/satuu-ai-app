@@ -51,6 +51,7 @@ export function createLiveBackend(supabase: SupabaseClient, functionsBaseUrl: st
       const { data, error } = await supabase
         .from('conversations')
         .select('*, contacts(wa_id, display_name)')
+        .is('hidden_at', null)
         .order('last_message_at', { ascending: false, nullsFirst: false })
         .limit(200);
       if (error) throw new Error(error.message);
@@ -124,7 +125,7 @@ export function createLiveBackend(supabase: SupabaseClient, functionsBaseUrl: st
     },
 
     async lostReasons(): Promise<Record<string, number>> {
-      const { data, error } = await supabase.from('conversations').select('lost_reason, contacts(wa_id)').eq('outcome', 'lost');
+      const { data, error } = await supabase.from('conversations').select('lost_reason, contacts(wa_id)').eq('outcome', 'lost').is('hidden_at', null);
       if (error) throw new Error(error.message);
       const out: Record<string, number> = {};
       for (const r of (data ?? []) as unknown as { lost_reason: string | null; contacts: { wa_id: string } | null }[]) {
