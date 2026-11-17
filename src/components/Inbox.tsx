@@ -223,10 +223,10 @@ export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Pr
           {waitingCount > 0 && (
             <button
               onClick={() => { setSortByLead(true); setView('inbox'); setSelectedId(null); }}
-              title="Горячие лиды ждут человека: напишите или отправьте голосовое в течение 15 минут"
+              title="Горячие лиды (80+), которым ещё не написал человек: напишите или отправьте голосовое в течение 15 минут"
               className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-red-300 bg-red-50 px-2.5 py-1 text-xs font-bold text-red-800"
             >
-              <Timer className="size-3.5" />{waitingCount}<span className="hidden lg:inline"> ждут человека</span>
+              <Timer className="size-3.5" />{waitingCount}<span className="hidden lg:inline"> горячих без человека</span>
             </button>
           )}
           {notifPerm === 'default' && (

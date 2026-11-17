@@ -63,7 +63,7 @@ function FunnelSection({ backend, days }: { backend: InboxBackend; days: number 
       <p className="flex flex-wrap items-center gap-x-5 gap-y-1 text-[13px] text-muted-foreground">
         <span className="inline-flex items-center gap-1.5"><ThumbsDown className="size-4" aria-hidden />Не купили: <b className="text-foreground">{f.lost}</b></span>
         <span className="inline-flex items-center gap-1.5" title="Сколько минут проходит до первого сообщения человека горячему лиду"><Timer className="size-4" aria-hidden />Горячие: первое касание человека: <b className="text-foreground">{f.hot_first_touch_min === null ? 'нет данных' : `${f.hot_first_touch_min} мин`}</b></span>
-        <span className="inline-flex items-center gap-1.5" title="Горячие, которые сейчас ждут человека"><Flame className="size-4 text-orange-500" aria-hidden />Горячие ждут человека: <b className={f.hot_waiting_now > 0 ? 'text-red-600' : 'text-foreground'}>{f.hot_waiting_now}</b></span>
+        <span className="inline-flex items-center gap-1.5" title="Горячие лиды (80+), которым ещё не написал человек"><Flame className="size-4 text-orange-500" aria-hidden />Горячие без человека: <b className={f.hot_waiting_now > 0 ? 'text-red-600' : 'text-foreground'}>{f.hot_waiting_now}</b></span>
       </p>
     </div>
   );
