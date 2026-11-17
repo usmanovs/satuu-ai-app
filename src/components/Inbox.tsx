@@ -38,7 +38,6 @@ function useTheme(): [Theme, () => void] {
 const errText = (e: unknown) => (e instanceof Error ? e.message : 'неизвестная ошибка');
 
 export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Props) {
-  const demo = backend.mode === 'demo';
   const now = useNow(15_000);
   const [theme, toggleTheme] = useTheme();
   const [convs, setConvs] = useState<Conversation[] | null>(null);
@@ -173,11 +172,6 @@ export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Pr
 
   return (
     <div className="flex h-dvh flex-col">
-      {demo && (
-        <div className="bg-fuchsia-700 px-3 py-1.5 text-center text-xs font-semibold text-white" role="status">
-          ДЕМО · данные вымышлены · сообщения WhatsApp не отправляются
-        </div>
-      )}
       {botAlerts.length > 0 && me?.role !== 'manager' && (
         <div className="border-b border-red-200 bg-red-50 px-4 py-2 text-sm text-red-900" role="alert">
           {botAlerts.map((a) => (
@@ -220,16 +214,12 @@ export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Pr
               {hotCount}<span className="hidden lg:inline"> {hotCount === 1 ? 'горячий лид' : 'горячих'}</span>
             </button>
           )}
-          {!demo && (
-            <>
-              <Badge tone={live === 'on' ? 'emerald' : 'amber'} title="Обновления в реальном времени">
-                <Radio className="size-3" />{live === 'on' ? 'Онлайн' : live === 'connecting' ? 'Подключение…' : 'Нет связи'}
-              </Badge>
-              <Badge tone={aiChecked ? 'neutral' : 'amber'} className="hidden sm:inline-flex" title="Когда n8n последний раз спрашивал, можно ли AI отвечать">
-                <Unplug className="size-3" />{aiChecked ? `n8n: проверка ${formatAgo(aiChecked, now)}` : 'n8n: не подключено'}
-              </Badge>
-            </>
-          )}
+          <Badge tone={live === 'on' ? 'emerald' : 'amber'} title="Обновления в реальном времени">
+            <Radio className="size-3" />{live === 'on' ? 'Онлайн' : live === 'connecting' ? 'Подключение…' : 'Нет связи'}
+          </Badge>
+          <Badge tone={aiChecked ? 'neutral' : 'amber'} className="hidden sm:inline-flex" title="Когда n8n последний раз спрашивал, можно ли AI отвечать">
+            <Unplug className="size-3" />{aiChecked ? `n8n: проверка ${formatAgo(aiChecked, now)}` : 'n8n: не подключено'}
+          </Badge>
           {me && (
             <>
               <Badge tone="neutral" className="hidden md:inline-flex" title={me.email ?? undefined}>{ROLE_LABEL[me.role]} · {memberName(me)}</Badge>
@@ -263,7 +253,7 @@ export function Inbox({ backend, businessName, onSignOut, onChangePassword }: Pr
           {selected ? (
             <ChatPanel
               key={selected.id}
-              conv={selected} messages={messages} integration={integration} demo={demo} now={now}
+              conv={selected} messages={messages} integration={integration} now={now}
               pendingAction={pending[selected.id]} actionError={actionError[selected.id]}
               onTakeover={() => runAction(selected.id, 'takeover')}
               onResume={() => runAction(selected.id, 'resume')}

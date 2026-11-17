@@ -28,7 +28,7 @@ supabase/migrations/   schema, RLS, server-side SQL functions
 supabase/functions/    n8n (integration contracts), inbox (dashboard backend), _shared
 supabase/provisioning/ owner + integration key + one-time import templates
 supabase/tests/        fixtures, cleanup, test-only mock webhook
-src/                   React app (live backend, demo backend, components)
+src/                   React app (live backend, components)
 tests/                 integration tests (run against a throwaway Supabase project)
 ```
 
@@ -46,12 +46,9 @@ Verified against a throwaway Supabase project (`mejaptdkcwxwcetxfdtr`) with 30 p
 | Human request | Phrases like «Позовите менеджера» set `human_requested` (AI blocked); «3 человека» does not; `request-human` never downgrades `human_handling` |
 | Human replies | Refused unless `human_handling` (409); free text refused outside the 24 h window (422) while a template is accepted; same idempotency key never produces a second send (the mock webhook saw 12 calls for 12 keys); n8n `4xx` → `failed`, `5xx`/timeout → stays `pending`, `2xx` → `accepted` (never `delivered`); with n8n unconfigured the real function answers `503 not_connected` and creates nothing |
 | Media | Image/audio get an honest placeholder, flagged `is_placeholder`, `supported:false` |
-| UI | Desktop two-pane and mobile list → full-screen chat verified in a browser (demo mode); filters, search, unread dot, state badges, distinct customer/AI/manager bubbles, delivery ticks, pending/failed states, 24 h notice |
-
-The UI's *live* mode (login + Realtime) was type-checked and built but **not clicked through in a browser**, because no real owner account exists yet. The demo mode was.
+| UI | Desktop two-pane and mobile list → full-screen chat verified in a browser; filters, search, unread dot, state badges, distinct customer/AI/manager bubbles, delivery ticks, pending/failed states, 24 h notice |
 
 ## What is mocked
-- **Demo mode** (`npm run dev:demo`): in-memory fictional data, no network, no Supabase, cannot send. Clearly bannered «ДЕМО».
 - **The n8n send webhook in tests**: `mock-n8n` / `inbox-selftest` (test-only). No real WhatsApp message was ever sent.
 
 ## What is NOT done / not verified

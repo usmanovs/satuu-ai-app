@@ -12,7 +12,6 @@ interface Props {
   conv: Conversation;
   messages: Message[] | null;
   integration: IntegrationStatus | null;
-  demo: boolean;
   now: number;
   pendingAction: 'takeover' | 'resume' | undefined;
   actionError: string | undefined;
@@ -31,7 +30,7 @@ interface Props {
 type Notice = { tone: 'error' | 'warn'; text: string };
 interface Attempt { key: string; text: string; template: boolean }
 
-export function ChatPanel({ conv, messages, integration, demo, now, pendingAction, actionError, onTakeover, onResume, onSend, role, members, onAssign, onOutcome, outcomeBusy, outcomeError, onBack }: Props) {
+export function ChatPanel({ conv, messages, integration, now, pendingAction, actionError, onTakeover, onResume, onSend, role, members, onAssign, onOutcome, outcomeBusy, outcomeError, onBack }: Props) {
   const [text, setText] = useState('');
   const [sending, setSending] = useState<Attempt | null>(null);
   const [attempt, setAttempt] = useState<Attempt | null>(null); // kept only after an ambiguous network failure
@@ -55,8 +54,8 @@ export function ChatPanel({ conv, messages, integration, demo, now, pendingActio
   const phoneDigits = conv.contacts.wa_id.replace(/\D/g, '');
   const handling = conv.state === 'human_handling';
   const inWindow = inServiceWindow(conv.last_inbound_at, now);
-  const sendConnected = demo || integration?.send_configured === true;
-  const templateConnected = demo || integration?.template_configured === true;
+  const sendConnected = integration?.send_configured === true;
+  const templateConnected = integration?.template_configured === true;
   const aiChecked = integration?.last_ai_check_at ?? null;
 
   async function doSend(template: boolean) {
@@ -94,7 +93,6 @@ export function ChatPanel({ conv, messages, integration, demo, now, pendingActio
 
   const pauseNote =
     conv.state === 'ai_active' ? null
-    : demo ? 'Демо: бот не подключён, это только пример интерфейса.'
     : aiChecked ? `Статус сохранён. n8n запрашивал разрешение для AI ${formatAgo(aiChecked, now)}.`
     : 'Статус сохранён, но n8n ещё ни разу не запрашивал разрешение — переключение здесь пока НЕ останавливает бота.';
 
@@ -204,7 +202,7 @@ export function ChatPanel({ conv, messages, integration, demo, now, pendingActio
           {pendingAction && <p className="flex items-center gap-2 text-amber-800"><Loader2 className="size-3.5 animate-spin" />Ожидаем подтверждения от сервера. Статус не изменён, пока он не ответит.</p>}
           {actionError && <p className="flex items-start gap-2 text-red-700"><TriangleAlert className="mt-0.5 size-3.5 shrink-0" />Не удалось выполнить действие: {actionError} Статус диалога не изменился.</p>}
           {conv.state_note && <p className="text-muted-foreground">{conv.state_note}</p>}
-          {pauseNote && <p className={aiChecked || demo ? 'text-muted-foreground' : 'text-amber-800'}>{pauseNote}</p>}
+          {pauseNote && <p className={aiChecked ? 'text-muted-foreground' : 'text-amber-800'}>{pauseNote}</p>}
         </div>
       )}
 

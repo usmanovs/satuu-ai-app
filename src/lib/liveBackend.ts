@@ -46,7 +46,6 @@ export function createLiveBackend(supabase: SupabaseClient, functionsBaseUrl: st
   }
 
   return {
-    mode: 'live',
 
     async listConversations() {
       const { data, error } = await supabase

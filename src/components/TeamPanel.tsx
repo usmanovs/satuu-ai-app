@@ -183,7 +183,7 @@ function MembersSection({ backend, members, onChanged }: { backend: InboxBackend
           <p className="font-semibold text-emerald-900">Ссылка для {issued.who}</p>
           <p className="text-emerald-900/80">Отправьте её сотруднику. По ссылке он сам задаст пароль и войдёт. Ссылка одноразовая и действует ограниченное время; в приложении она не сохраняется.</p>
           <div className="flex flex-wrap items-center gap-2">
-            <input readOnly value={issued.link} onFocus={(e) => e.currentTarget.select()} aria-label="Одноразовая ссылка" className="h-9 min-w-0 flex-1 rounded-md border bg-white px-2 text-xs" />
+            <input readOnly value={issued.link} onFocus={(e) => e.currentTarget.select()} aria-label="Одноразовая ссылка" className="h-9 min-w-0 flex-1 rounded-md border bg-card px-2 text-xs text-foreground" />
             <Button size="sm" onClick={copy}><Copy />{copied ? 'Скопировано' : 'Копировать'}</Button>
             <Button size="sm" variant="ghost" onClick={() => setIssued(null)}>Скрыть</Button>
           </div>

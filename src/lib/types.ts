@@ -125,7 +125,6 @@ export interface BotAlert {
 export interface InboxBackend {
   /** Open problems with the bot (failed steps, no replies, failed automatic tests). */
   listBotAlerts(): Promise<BotAlert[]>;
-  mode: 'live' | 'demo';
   listConversations(): Promise<Conversation[]>;
   listMessages(conversationId: string): Promise<Message[]>;
   subscribe(onChange: (e: ChangeEvent) => void, onStatus: (s: 'on' | 'off') => void): () => void;

@@ -41,7 +41,6 @@ supabase functions deploy inbox                    # JWT required (and re-verifi
 cp .env.example .env.local     # set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY (publishable/anon key only)
 npm install
 npm run dev                    # live mode
-npm run dev:demo               # fictional data, no Supabase, can never send
 npm run build                  # static files in dist/
 ```
 

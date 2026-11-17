@@ -94,7 +94,7 @@ button:disabled { cursor: not-allowed; }
 
   --color-red-50: #3a1a18; --color-red-100: #4a2220; --color-red-200: #6b2f2b; --color-red-300: #8d3d37; --color-red-600: #f0897d; --color-red-700: #f4a197; --color-red-800: #f8b9b1; --color-red-900: #fcd3ce; --color-red-950: #fde4e1;
   --color-amber-50: #33270f; --color-amber-100: #44330f; --color-amber-200: #66501a; --color-amber-700: #f0c25a; --color-amber-800: #f5d27e; --color-amber-900: #f9e1a6;
-  --color-emerald-100: #12382a; --color-emerald-800: #7fe0b8;
+  --color-emerald-50: #11302a; --color-emerald-100: #12382a; --color-emerald-200: #1f5a48; --color-emerald-700: #7fe0b8; --color-emerald-800: #9aebc9; --color-emerald-900: #bff5db;
   --color-blue-100: #172a47; --color-blue-800: #9cc2fb;
   --color-sky-50: #112a38; --color-sky-200: #1f4a62; --color-sky-500: #4fb6ea; --color-sky-700: #7cc8f0;
   --color-violet-50: #271d44; --color-violet-300: #5b46a0; --color-violet-800: #cdbcff;

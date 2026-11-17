@@ -5,9 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Inbox } from '@/components/Inbox';
 import { Login } from '@/components/Login';
-import { createDemoBackend } from '@/lib/demoBackend';
 import { createLiveBackend } from '@/lib/liveBackend';
-import { DEMO_MODE, SUPABASE_ANON_KEY, SUPABASE_URL, supabase } from '@/lib/supabase';
+import { SUPABASE_ANON_KEY, SUPABASE_URL, supabase } from '@/lib/supabase';
 
 function Screen({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -138,15 +137,11 @@ function LiveApp({ client }: { client: SupabaseClient }) {
   return <Authenticated client={client} session={session} />;
 }
 
-const demoBackend = DEMO_MODE ? createDemoBackend() : null;
-
 export default function App() {
-  if (DEMO_MODE && demoBackend) return <Inbox backend={demoBackend} />;
   if (!supabase) {
     return (
       <Screen title="Не подключено">
         <p>Supabase не настроен. Скопируйте <code>.env.example</code> в <code>.env.local</code> и укажите <code>VITE_SUPABASE_URL</code> и <code>VITE_SUPABASE_ANON_KEY</code>.</p>
-        <p className="text-muted-foreground">Чтобы посмотреть интерфейс на вымышленных данных: <code>npm run dev:demo</code>.</p>
       </Screen>
     );
   }

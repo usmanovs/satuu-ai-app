@@ -149,7 +149,6 @@ Two halves:
 | `WA_TEMPLATE_NAME`, `WA_TEMPLATE_LANG` | Supabase Edge Function secret | Approved template for sends outside the 24 h window | **No** |
 | `ALLOWED_ORIGIN` | Supabase Edge Function secret (optional) | CORS lock to the dashboard origin | No |
 | `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY` | Dashboard build env (`.env.local`) | Public URL + anon key for the browser | No |
-| `VITE_DEMO_MODE` | Dashboard build env | `true` = fictional data, never sends | Unset (live) |
 
 ### Required workflow changes
 Expressions assume the n8n WhatsApp Trigger output (`messages[0].from|id|type|text.body|timestamp`, `contacts[0].profile.name`, `statuses[0].…`). **Unverified — check against one real execution.** Details and settings in `docs/N8N_INTEGRATION.md`.

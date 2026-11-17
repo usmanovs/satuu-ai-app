@@ -10,7 +10,6 @@ const badgeVariants = cva('inline-flex items-center gap-1 rounded-full px-2 py-0
       amber: 'bg-amber-100 text-amber-900',
       blue: 'bg-blue-100 text-blue-800',
       red: 'bg-red-100 text-red-800',
-      demo: 'bg-fuchsia-100 text-fuchsia-800',
     },
   },
   defaultVariants: { tone: 'neutral' },
