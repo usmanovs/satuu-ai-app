@@ -122,3 +122,10 @@ the customer asks for "full info".
 - **Funnel** (Команда page, owner): leads, dialog (3+ messages), interested (score 40+), hot (80+), got QR, bought, lost, time to first human touch for hot leads. Hidden and test chats are ignored.
 - **Workflow 9 "Report: Weekly Sales Digest":** Mondays 10:30 Bishkek, writes a short Russian report from `weekly_digest_data` (funnel vs last week, objections, which proof was shown, stalled hot leads, silent-after-price chats) and saves it to `sales_reports`; the owner reads it on the Команда page. Run it by hand with "Run Now".
 - **Students from Russia:** policy rule in the Build Persona prompt: no payment details, honest explanation about blocked AI tools, chat flagged for the team; numbers starting with 7 are asked for their country before payment (Russia and Kazakhstan share +7).
+
+## Customer photos, videos and documents (2026-11-17)
+Workflow 1 has a side branch after "Ingest Message": Find Media -> Has Media? -> Get Media URL -> Download Media -> Upload Media. It downloads the file from WhatsApp and posts it to the `media` edge function,
+which saves it in the private storage bucket `chat-media` (max 25 MB; path business/conversation/message) and fills `messages.media_path/media_mime/media_name/media_size`. The dashboard shows the photo,
+a video player or a document download card (signed links valid for 1 hour; a manager can open a file only if they can see the chat). The assistant still does not understand the content of videos or photos.
+Failures in this branch are ignored (continue on error), so the reply to the customer is never delayed. Voice notes use the older transcription branch. Files are kept until the chat is deleted; add a cleanup if storage grows.
+Migration: `20261117000021_message_media.sql`.

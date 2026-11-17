@@ -89,6 +89,11 @@ export interface Message {
   status_updated_at: string;
   error_code: string | null;
   error_message: string | null;
+  /** photo / video / document the customer sent (private storage path) */
+  media_path?: string | null;
+  media_mime?: string | null;
+  media_name?: string | null;
+  media_size?: number | null;
 }
 
 export interface IntegrationStatus {

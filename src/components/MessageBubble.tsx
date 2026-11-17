@@ -1,6 +1,7 @@
 import { AlertTriangle, Bot, Check, CheckCheck, Clock, ImageOff, Mic, UserRound } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { formatTime, splitVoice, statusView } from '@/lib/format';
+import { MediaView } from '@/components/MediaView';
 import type { Message } from '@/lib/types';
 
 const ROLE = {
@@ -38,8 +39,9 @@ export function MessageBubble({ m, now, local }: { m: Message; now: number; loca
           </div>
         ) : (
           <>
-            {m.is_placeholder && <ImageOff className="mr-1.5 mb-0.5 inline size-4 opacity-60" aria-hidden />}
-            <span className={cn('whitespace-pre-wrap break-words', m.is_placeholder && 'italic opacity-80')}>{m.body}</span>
+            <MediaView m={m} />
+            {m.is_placeholder && !m.media_path && <ImageOff className="mr-1.5 mb-0.5 inline size-4 opacity-60" aria-hidden />}
+            {!(m.media_path && m.is_placeholder) && <span className={cn('whitespace-pre-wrap break-words', m.is_placeholder && 'italic opacity-80')}>{m.body}</span>}
           </>
         )}
         <span className={cn('mt-1 flex items-center justify-end gap-1.5 text-[11px]', failed ? 'text-red-600' : toneClass)}>

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { registerMediaResolver } from '@/lib/media';
 import type {
   ActionResult, BotAlert, ChangeEvent, Conversation, FunnelStats, SalesReport, InboxBackend, IntegrationStatus, LinkResult, Me, Member, Message, NumberPatch, WaNumber, Outcome, OutcomeResult, SendInput, SendResult, SimpleResult, StateAction, TeamStats,
 } from './types';
@@ -11,6 +12,10 @@ interface FnResponse { status: number; json: any }
  * Edge Function, which derives the business and manager identity from the session token.
  */
 export function createLiveBackend(supabase: SupabaseClient, functionsBaseUrl: string, anonKey: string): InboxBackend {
+  registerMediaResolver(async (path) => {
+    const { data } = await supabase.storage.from('chat-media').createSignedUrl(path, 3600);
+    return data?.signedUrl ?? null;
+  });
   async function callFn(path: string, body?: unknown, method: 'GET' | 'POST' = 'POST'): Promise<FnResponse> {
     const { data } = await supabase.auth.getSession();
     const token = data.session?.access_token;
