@@ -82,3 +82,8 @@ The Команда page (team structure, manager statistics, numbers and AI assi
 Company rate: 87.5 som per 1 USD (owner, 2026-11-17). For customers who write in Kyrgyz and ask about prices, and for anyone who asks for som, the bot shows dollars and som:
 $249 = 21,788 som, $349 = 30,538 som, $2,500 = 218,750 som (fixed figures in the prompt so the model never calculates). If the rate or prices change, edit "SOM PRICES"
 in the Build Persona node of workflow 1.
+
+## AI video course
+GetForce has a separate AI photo/video course: https://courses.getforce.org/ai-video, 2,000 som (owner, 2026-11-17). The bot mentions it (one or two sentences plus the
+link, price in som, never converted) to customers interested in AI photo or AI video, and says nothing else about its content or payment. It is not part of the main
+program or its options. Rule: "AI VIDEO COURSE" in the Build Persona node of workflow 1.
