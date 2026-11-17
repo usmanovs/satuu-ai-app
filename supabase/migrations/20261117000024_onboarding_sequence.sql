@@ -163,3 +163,74 @@ end;
 $fn$;
 revoke execute on function public.set_purchased_option(uuid, text) from public, anon;
 grant execute on function public.set_purchased_option(uuid, text) to authenticated;
+
+-- The due-query takes the time as a parameter so it can be tested at any date; get_onboarding_due() is the production entry (now()).
+create or replace function public.get_onboarding_due_at(p_business uuid, p_limit integer, p_now timestamptz)
+returns jsonb language plpgsql security definer set search_path to '' as $fn$
+declare
+  v_now timestamptz := p_now;
+  v_since constant timestamptz := timestamptz '2026-11-17 22:00:00+00';   -- buyers marked before this date get nothing
+  v_start constant timestamptz := timestamptz '2026-11-27 00:00:00+06';
+  v_rem_from constant timestamptz := timestamptz '2026-11-26 10:00:00+06';
+  v_rem_to constant timestamptz := timestamptz '2026-11-27 12:00:00+06';
+  v_chk_from constant timestamptz := timestamptz '2026-12-04 10:00:00+06';
+  v_chk_to constant timestamptz := timestamptz '2026-12-08 00:00:00+06';
+  v_demo_from constant timestamptz := timestamptz '2026-12-12 10:00:00+06';
+  v_demo_to constant timestamptz := timestamptz '2026-12-16 00:00:00+06';
+  v_rows jsonb;
+begin
+  if extract(hour from (v_now at time zone 'Asia/Bishkek')) not between 8 and 20 then
+    return '[]'::jsonb;
+  end if;
+
+  select coalesce(jsonb_agg(to_jsonb(r) - 'rank'), '[]'::jsonb) into v_rows
+  from (
+   select * from (
+    select distinct on (x.conversation_id) x.*
+    from (
+      select cv.id as conversation_id, ct.wa_id, ct.display_name, wn.phone_number_id, cv.purchased_option, s.step, s.rank,
+             (select left(m.body, 200) from public.messages m
+               where m.conversation_id = cv.id and m.direction = 'inbound' and not m.is_placeholder
+               order by m.message_timestamp desc limit 1) as last_text
+        from public.conversations cv
+        join public.contacts ct on ct.id = cv.contact_id
+        left join public.wa_numbers wn on wn.id = cv.wa_number_id
+        cross join (values ('welcome', 1), ('prep', 2), ('reminder', 3), ('checkin', 4), ('demo', 5)) as s(step, rank)
+       where cv.business_id = p_business
+         and cv.outcome = 'won' and cv.outcome_at >= v_since
+         and ct.wa_id not like '99900%'
+         and not exists (select 1 from public.onboarding_sends o where o.conversation_id = cv.id and o.step = s.step)
+         and not exists (select 1 from public.messages m
+                          where m.conversation_id = cv.id and m.direction = 'inbound'
+                            and m.body ~* '(stop|стоп|не пишите|не беспокойте|не звоните|токтот)')
+         and (
+           s.step = 'welcome'
+           or (
+                not exists (select 1 from public.onboarding_sends o where o.conversation_id = cv.id and o.claimed_at > v_now - interval '12 hours')
+                and exists (select 1 from public.onboarding_sends o where o.conversation_id = cv.id and o.step = 'welcome' and o.sent_at is not null)
+                and (
+                  (s.step = 'prep' and exists (select 1 from public.onboarding_sends o where o.conversation_id = cv.id and o.step = 'welcome' and o.sent_at <= v_now - interval '20 hours')
+                       and v_now < v_start + interval '1 day')
+                  or (s.step = 'reminder' and cv.purchased_option in ('live', 'mentorship') and v_now between v_rem_from and v_rem_to)
+                  or (s.step = 'checkin' and v_now between v_chk_from and v_chk_to)
+                  or (s.step = 'demo' and cv.purchased_option in ('live', 'mentorship') and v_now between v_demo_from and v_demo_to)
+                )
+              )
+         )
+    ) x
+    order by x.conversation_id, x.rank
+   ) d
+   order by d.rank, d.conversation_id
+   limit greatest(1, least(coalesce(p_limit, 10), 20))
+  ) r;
+  return v_rows;
+end;
+$fn$;
+
+create or replace function public.get_onboarding_due(p_business uuid, p_limit integer default 10)
+returns jsonb language sql security definer set search_path to '' as $fn$
+  select public.get_onboarding_due_at(p_business, p_limit, now());
+$fn$;
+
+revoke execute on function public.get_onboarding_due_at(uuid, integer, timestamptz) from public, anon, authenticated;
+grant execute on function public.get_onboarding_due_at(uuid, integer, timestamptz) to service_role;

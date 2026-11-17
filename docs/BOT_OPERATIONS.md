@@ -12,6 +12,7 @@ The n8n workflows (cloud: getforce.app.n8n.cloud) and what each one does:
 | 6 | Watchdog: Unanswered Messages | Every 30 min; alerts if customers wrote and got no reply for 5+ min |
 | 8 | Follow-up: Second Touch (Template) | Hourly 10:00-18:00 Bishkek: one approved template message (EN/RU/KY) to warm leads quiet 3-7 days; skips itself until Meta approves the templates |
 | 7 | Tests: Bot Regression | Runs ~25 scripted chats through the real bot; alerts if any check fails |
+| 10 | After-Payment Sequence | Every 2 h, 08:00-20:00 Bishkek: sends the approved `onb_*` templates after a customer is marked as bought (see "After-payment sequence") |
 
 The sales prompt lives in two places in workflow 1: the base text in the node "Sales AI Agent" and the facts, payment,
 handoff, story and formatting rules in the node "Build Persona" (these override the base text where they conflict).
@@ -142,3 +143,16 @@ Owner decision: every conversation is steered to the Vibe Coding program, Live c
 
 ## Persona nodes in workflow 1
 The prompt text lives in **Build Persona Raw**; the small node **Build Persona** after it only applies the owner's word rule for "app" (Russian "приложение", never "колдонмо"/"тиркеме") and feeds the Sales AI Agent. Edit course rules in Build Persona Raw. Note: two sessions edited these nodes at the same time on 2026-11-17 and one overwrote the other's wrapper; it was restored and verified byte for byte.
+
+## After-payment sequence (2026-11-17)
+When a manager presses **Купил** in the dashboard they now also pick what the customer bought (Записи $249, Live-занятия $349, Менторство $2 500); it can be corrected later in the same panel (`conversations.purchased_option`). Workflow 10 then sends WhatsApp templates, one per step, in the customer's language (RU, KY or EN, chosen like the second follow-up; falls back to RU/EN if a language is not approved):
+| Step | When | Who | Template |
+|---|---|---|---|
+| welcome | at the next run after "Купил" | everyone | `onb_welcome_*`: welcome, onboarding manager will help with Discord (no link, no timing promised) |
+| prep | 20 h or more after the welcome (until 28 Nov) | everyone | `onb_prep_*`: computer, Claude subscription (~$20/month) |
+| reminder | 26 Nov 10:00 to 27 Nov 12:00 Bishkek | Live and Mentorship | `onb_reminder_*`: cohort starts 27 Nov, Mon/Wed/Fri 20:00 Bishkek, Zoom |
+| checkin | 4-7 Dec | everyone | `onb_checkin_*`: how is week one going |
+| demo | 12-15 Dec | Live and Mentorship | `onb_demo_*` (MARKETING category, has an opt-out footer): asks for a short testimonial and permission to share it |
+Rules: sends only 08:00-20:59 Bishkek; at most one step per chat per run and 12 h between steps; one send per step per chat (table `onboarding_sends`, claim then confirm); never to a chat where the customer wrote STOP; buyers marked before 2026-11-17 22:00 UTC get nothing; test chats (99900...) are skipped. Each sent message is also recorded in the chat with a 📨 prefix. A failed send releases the claim and shows a dashboard alert.
+Templates were submitted to Meta on 2026-11-17 (all PENDING at that time); the workflow skips itself until at least one `onb_*` template is APPROVED. The Kyrgyz wording is not yet reviewed by a native speaker. The dates (cohort start 27 Nov, Demo Day 11 Dec) are fixed in the function `get_onboarding_due_at` and in the template texts: change them there for the next cohort.
+Pieces: migration `20261117000024_onboarding_sequence.sql`, edge function `onboarding` (routes due, claim, confirm, release), template source `n8n/onboarding_templates.js`, workflow code `n8n/onboarding_pick.js`. The 2-hourly schedule costs about 7 n8n executions a day.
