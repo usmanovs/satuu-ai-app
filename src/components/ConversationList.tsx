@@ -150,8 +150,8 @@ export function ConversationList({ conversations, loadError, selectedId, onSelec
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center justify-between gap-2">
                       <span className="flex min-w-0 items-center gap-1.5">
-                        <span className={cn('min-w-[7ch] max-w-full truncate text-[15px]', unread ? 'font-bold' : 'font-medium')}>{name}</span>
                         {(() => { const k = countryOf(c.contacts.wa_id); return k ? <span className="shrink-0 text-sm" role="img" aria-label={k.name} title={`${k.name} · +${c.contacts.wa_id}`}>{k.flag}</span> : null; })()}
+                        <span className={cn('min-w-[7ch] max-w-full truncate text-[15px]', unread ? 'font-bold' : 'font-medium')}>{name}</span>
                         {isHotAlert(c) && <span className="fire shrink-0 text-base" role="img" aria-label="Горячий лид" title={`Горячий лид · ${c.lead_score}/100${c.lead_reason ? ` — ${c.lead_reason}` : ''}`}>🔥</span>}
                       </span>
                       <span className={cn('shrink-0 text-xs', unread ? 'font-semibold text-primary' : 'text-muted-foreground')}>{formatListTime(c.last_message_at, now)}</span>
