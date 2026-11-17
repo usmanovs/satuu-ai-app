@@ -96,3 +96,4 @@ No disclaimer sentence after a story with money (owner, 2026-11-17: "individual 
 person's own, then asks the customer about their own goal. Still forbidden: implying the customer will earn the same, calling it typical or average, adding sources or timelines.
 Rule: "MONEY IN STORIES" in the Build Persona node of workflow 1. The regression suite no longer expects the disclaimer, and gained cases for som prices, the AI video course
 and the "no one-time payment" wording.
+When a customer asks "can I earn / is it worth it", the bot never opens with a plain yes ("да, можно заработать"): it starts with the story itself ("NO FLAT YES ABOUT EARNING" in the same rule).
