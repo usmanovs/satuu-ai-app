@@ -184,3 +184,9 @@ The bot cannot see images. Before 2026-11-18 a customer's photo got no reply at 
 
 - The WhatsApp course group invite was reset: 8 customers wrote that they cannot join the group (6 in the last 24 hours). Fix the invite link at the source; the bot can only flag these chats.
 - A follow-up nudge went out the morning after a customer said they would write back themselves. Consider a longer quiet period when the customer closes the chat.
+
+## Scope and proof limits (third review, 2026-11-18)
+
+Stored in the `Build Persona` wrapper node. Found in the chats: (1) the bot coached a customer through building a website (wrote a ChatGPT prompt, asked how it went): free tutoring is now forbidden; (2) a customer who said she had already finished the course got sales questions: graduates are not pitched and the chat is flagged; (3) job and vacancy questions («вакансии», «работа с американцами») got "no information": the bot now says the course does not guarantee a job or clients, invents nothing and flags the chat; (4) the $2,000 student story appeared in 26 of 90 chats (32 times) and the Zarena video 28 times: each is now used at most once per chat and never in the first reply.
+
+Open question for the owner: several ads or videos seem to promise jobs or vacancies. A manager once sent a vacancy spreadsheet. If that is a real offer, tell the bot what to say about it.
