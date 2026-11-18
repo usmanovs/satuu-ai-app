@@ -1,6 +1,6 @@
 import { countryOf } from '@/lib/country';
 import { useEffect, useRef, useState } from 'react';
-import { ArrowLeft, Bot, Check, ChevronDown, Hand, Loader2, MessageCircle, Phone, RotateCcw, Send, TriangleAlert, X } from 'lucide-react';
+import { ArrowLeft, Bot, Check, ChevronDown, Hand, Loader2, Phone, RotateCcw, Send, TriangleAlert, X } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/input';
