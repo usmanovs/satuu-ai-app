@@ -194,3 +194,5 @@ Open question for the owner: several ads or videos seem to promise jobs or vacan
 ## Jobs and vacancies (confirmed by the owner, 2026-11-18)
 
 We do not promise jobs, vacancies or clients and we do not place students. We teach the skills and tell students they must go out and find projects themselves. The bot says this plainly and kindly when asked, invents no vacancies or partner companies, and does not flag a manager for this question alone. (A vacancy spreadsheet link once sent by a manager is not part of the offer.) Rule 3 of the scope block in the `Build Persona` wrapper node.
+
+**Vacancy list (owner, 2026-11-18):** customers who ask for vacancies or AI jobs get the owner's spreadsheet of 10 AI jobs (https://docs.google.com/spreadsheets/d/1b2XEHCB5T7yv3RxpWDNyQPrw9SG2f--alAsz3GWUSVU/edit?usp=sharing), once per chat, framed as a list to apply to themselves and never as a job promise. To change the list or link, edit rule 3 of the scope block in the `Build Persona` wrapper node.
