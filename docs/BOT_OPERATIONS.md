@@ -171,3 +171,7 @@ The owner found the Kyrgyz price line for the $2,500 1:1 mentorship ("жеке �
 ## One reply per burst of messages
 
 Workflow 1 checks "is this the newest customer message" after the 12 s wait (`Latest Message?`) and again right before sending (`Recheck Latest` + `Still Latest?`, after `Send Gate`). If the customer wrote again while the AI was generating, the stale reply is dropped and the newer run answers everything together. Before this, 28 of 242 AI messages on 2026-11-18 were quick back-to-back duplicates (up to three overlapping replies).
+
+## Computer requirements and feedback (confirmed by the owner, 2026-11-18)
+
+Stored in the `Build Persona` wrapper node. Minimum: laptop or desktop from roughly the last 8-10 years, 4 GB memory (8 GB more comfortable), ordinary dual-core processor, about 10 GB free disk, stable internet, up-to-date Chrome/Edge/Firefox. Windows 7 is fine (also Windows 10/11, macOS, Linux). A phone does not work. The numbers (4 GB, 10 GB, 8-10 years) were proposed by the assistant and approved implicitly by the owner: adjust them here if they are wrong. Feedback: quick during the course; afterwards students keep access to other students' feedback; recorded lessons get Discord support. No exact response time is ever promised.
