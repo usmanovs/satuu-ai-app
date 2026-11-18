@@ -175,3 +175,12 @@ Workflow 1 checks "is this the newest customer message" after the 12 s wait (`La
 ## Computer requirements and feedback (confirmed by the owner, 2026-11-18)
 
 Stored in the `Build Persona` wrapper node. Minimum: laptop or desktop from roughly the last 8-10 years, 4 GB memory (8 GB more comfortable), ordinary dual-core processor, about 10 GB free disk, stable internet, up-to-date Chrome/Edge/Firefox. Windows 7 is fine (also Windows 10/11, macOS, Linux). A phone does not work. The numbers (4 GB, 10 GB, 8-10 years) were proposed by the assistant and approved implicitly by the owner: adjust them here if they are wrong. Feedback: quick during the course; afterwards students keep access to other students' feedback; recorded lessons get Discord support. No exact response time is ever promised.
+
+## Photos, files and videos
+
+The bot cannot see images. Before 2026-11-18 a customer's photo got no reply at all, and one customer wrote «жооп жок го???» eleven minutes later. Now workflow 1 has a branch from `Is Duplicate`: `Unsupported Media?` (image, document or video, chat AI-active, not a test) -> `Flag Media` (manager flag) -> `Media Reply Text` -> `Send Media Reply` -> `Record Media Reply`. The reply is one honest line asking for a few words, in Kyrgyz, Russian or both (by caption). Reactions and stickers get no reply. The path cannot be run through the test webhook (text only), so it was checked by wiring and credentials only.
+
+## Review findings 2026-11-18 (second pass)
+
+- The WhatsApp course group invite was reset: 8 customers wrote that they cannot join the group (6 in the last 24 hours). Fix the invite link at the source; the bot can only flag these chats.
+- A follow-up nudge went out the morning after a customer said they would write back themselves. Consider a longer quiet period when the customer closes the chat.
