@@ -190,3 +190,7 @@ The bot cannot see images. Before 2026-11-18 a customer's photo got no reply at 
 Stored in the `Build Persona` wrapper node. Found in the chats: (1) the bot coached a customer through building a website (wrote a ChatGPT prompt, asked how it went): free tutoring is now forbidden; (2) a customer who said she had already finished the course got sales questions: graduates are not pitched and the chat is flagged; (3) job and vacancy questions («вакансии», «работа с американцами») got "no information": the bot now says the course does not guarantee a job or clients, invents nothing and flags the chat; (4) the $2,000 student story appeared in 26 of 90 chats (32 times) and the Zarena video 28 times: each is now used at most once per chat and never in the first reply.
 
 Open question for the owner: several ads or videos seem to promise jobs or vacancies. A manager once sent a vacancy spreadsheet. If that is a real offer, tell the bot what to say about it.
+
+## Jobs and vacancies (confirmed by the owner, 2026-11-18)
+
+We do not promise jobs, vacancies or clients and we do not place students. We teach the skills and tell students they must go out and find projects themselves. The bot says this plainly and kindly when asked, invents no vacancies or partner companies, and does not flag a manager for this question alone. (A vacancy spreadsheet link once sent by a manager is not part of the offer.) Rule 3 of the scope block in the `Build Persona` wrapper node.
