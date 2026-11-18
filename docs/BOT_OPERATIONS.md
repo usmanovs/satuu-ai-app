@@ -162,3 +162,8 @@ Workflow 1: after "Latest Message?" a real customer chat (not 99900 test chats) 
 
 ## Mentorship pitch (2026-11-17)
 The owner found the Kyrgyz price line for the $2,500 1:1 mentorship ("жеке жардам", personal help) flat. Rule "MENTORSHIP PITCH" in Build Persona Raw: no vague phrases; the price-list line names two or three concrete things (weekly 1:1 calls with Seyitbek, direct WhatsApp/Telegram access, code review of the student's own project, the $500 guarantee as written in MENTORSHIP EARNINGS GUARANTEE); when a customer asks about it or compares options, it is presented as the VIP choice (personal work with Seyitbek, individual plan, career and portfolio help, plus all of Live classes) and ends with one question about their goal. The bot still never invents the number or length of calls, schedule, response times or bonuses. The name stays "1:1 mentorship"; "VIP" is not used in customer messages unless the owner decides to rename it.
+
+## Manager flag guard and natural tone
+
+- **Flag guard** (workflow 1, node `Needs Manager?`): the AI's `[[NEED_MANAGER]]` marker is ignored when the customer's message is a bare acknowledgement (ок, макул, рахмат, да, 👍…) or is under 26 characters with no question mark and none of the risk words (Russia, refund, complaint, discount, installments, invoice). Before this, chats like «Ок» or «Рилс» were flagged for no reason.
+- **Natural tone rules** live in the small wrapper node `Build Persona` (appended after the prompt): greet only in the first message of a chat; answer the latest message or problem first; no stock "I have no exact information" phrase; casual short questions; never ask for a screenshot (the bot cannot see images); WhatsApp-group join trouble flags the chat for a manager.
