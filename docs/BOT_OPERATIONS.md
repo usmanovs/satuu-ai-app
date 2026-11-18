@@ -167,3 +167,7 @@ The owner found the Kyrgyz price line for the $2,500 1:1 mentorship ("жеке �
 
 - **Flag guard** (workflow 1, node `Needs Manager?`): the AI's `[[NEED_MANAGER]]` marker is ignored when the customer's message is a bare acknowledgement (ок, макул, рахмат, да, 👍…) or is under 26 characters with no question mark and none of the risk words (Russia, refund, complaint, discount, installments, invoice). Before this, chats like «Ок» or «Рилс» were flagged for no reason.
 - **Natural tone rules** live in the small wrapper node `Build Persona` (appended after the prompt): greet only in the first message of a chat; answer the latest message or problem first; no stock "I have no exact information" phrase; casual short questions; never ask for a screenshot (the bot cannot see images); WhatsApp-group join trouble flags the chat for a manager.
+
+## One reply per burst of messages
+
+Workflow 1 checks "is this the newest customer message" after the 12 s wait (`Latest Message?`) and again right before sending (`Recheck Latest` + `Still Latest?`, after `Send Gate`). If the customer wrote again while the AI was generating, the stale reply is dropped and the newer run answers everything together. Before this, 28 of 242 AI messages on 2026-11-18 were quick back-to-back duplicates (up to three overlapping replies).
