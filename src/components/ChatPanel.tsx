@@ -115,19 +115,12 @@ export function ChatPanel({ conv, messages, integration, now, pendingAction, act
         </div>
         <div className="flex w-full shrink-0 gap-2 sm:w-auto [&>button]:min-w-0 [&>button]:flex-1 sm:[&>button]:flex-none">
           <a
-            href={`tel:+${phoneDigits}`}
-            title="Позвонить клиенту с вашего телефона (номер бизнеса в WhatsApp для звонков не используется)"
-            aria-label="Позвонить"
+            href={`https://wa.me/${phoneDigits}`} target="_blank" rel="noopener noreferrer"
+            title="Откроется чат в WhatsApp: нажмите там на значок звонка"
+            aria-label="Позвонить в WhatsApp"
             className="inline-flex h-10 w-10 shrink-0 items-center justify-center gap-1.5 rounded-md border bg-background text-sm font-medium hover:bg-muted sm:h-8 sm:w-auto sm:px-3"
           >
-            <Phone className="size-4" /><span className="hidden sm:inline">Позвонить</span>
-          </a>
-          <a
-            href={`https://wa.me/${phoneDigits}`} target="_blank" rel="noopener noreferrer"
-            title="Открыть чат в приложении WhatsApp"
-            className="hidden h-8 items-center gap-1.5 rounded-md border bg-background px-3 text-sm font-medium hover:bg-muted sm:inline-flex"
-          >
-            <MessageCircle className="size-4" /><span>Открыть в WhatsApp</span>
+            <Phone className="size-4" /><span className="hidden sm:inline">Позвонить в WhatsApp</span>
           </a>
           {conv.state !== 'ai_active' && (
             <Button variant={handling ? 'default' : 'outline'} size="sm" className="h-10 sm:h-8" onClick={onResume} disabled={!!pendingAction}>
