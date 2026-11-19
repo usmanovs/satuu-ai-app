@@ -231,3 +231,11 @@ When a customer asks about the iOS course (building iPhone/iOS apps), the bot sa
 **iOS course availability (owner, 2026-11-19):** right now the iOS course is available only as a recording; there are no live classes for it. The bot says this together with the Mac requirement (block `IOS COURSE` in the `Build Persona` wrapper). Price, dates and the page link are still unknown to the bot, so it invents none and flags the chat.
 
 **iOS course facts (owner, 2026-11-19; source https://ios.getforce.org/).** Replaces the earlier iOS paragraphs. Block `IOS COURSE` in the `Build Persona` wrapper. The bot says: AI-first course for beginners (design in Google Stitch, build SwiftUI with Claude Code / Claude Desktop, publish to the App Store), 15 days, six chapters; no coding or iPhone needed (Xcode simulator); right now it is available only as a recording (no live classes); $200 (about 17 500 som), one-time, lifetime access, private Discord, completion certificate; needs a Mac (not Windows), stable internet and about 6 hours a week; outside costs are disclosed honestly: Apple Developer account about $99 per year and a Claude subscription about $50. The page link is shared once per chat; payment uses the normal regional flow with $200. The bot never repeats the page's income claims, never promises App Store approval or earnings, and flags a manager only if asked about a refund policy, a start date or live-plan details (the page also lists a $349 Live plan that is not available now, and shows no refund policy).
+
+## Wrong phone clock made the bot skip a greeting (2026-11-19)
+Symptom: a customer's "Саламатсызбы" got no reply and the dashboard banner said the bot had not answered. Cause: the customer's
+phone clock was wrong, so WhatsApp stamped the message 04:55:12, older than their previous message (04:55:31). The "answer once"
+check (`pending_customer_input`) ordered messages by that sender timestamp, decided a newer message existed and dropped the run.
+Fix: the check now orders and compares by arrival time (`created_at`, our server clock). Migration 20261119000026.
+Note: `last_inbound_at` still uses the sender timestamp, so for such a phone it can read earlier than real; this errs on the safe side
+for the 24-hour free-reply window.
