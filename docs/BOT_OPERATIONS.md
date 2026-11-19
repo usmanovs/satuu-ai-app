@@ -239,3 +239,12 @@ check (`pending_customer_input`) ordered messages by that sender timestamp, deci
 Fix: the check now orders and compares by arrival time (`created_at`, our server clock). Migration 20261119000026.
 Note: `last_inbound_at` still uses the sender timestamp, so for such a phone it can read earlier than real; this errs on the safe side
 for the 24-hour free-reply window.
+
+## VIP pitch for the 1:1 mentorship (2026-11-19)
+The "Build Persona" wrapper in workflow 1 has a `VIP PITCH` block. When a customer asks about the 1:1 mentorship, wants faster results or
+compares options, the bot presents it as the VIP experience: 👑 opening line, an emoji list (weekly 1:1 calls with Seyitbek, direct access
+in WhatsApp/Telegram, code review of their project, individual plan with career and portfolio help, all Live classes, the $500 earnings
+guarantee), the price *$2,500* (≈ 218 750 сом), a closing line about a personal mentor, and one question about their goal. A Kyrgyz model
+wording is included in the block; the bot adapts it and does not repeat the full block in the same chat. In a plain price list it stays
+one short line. It never invents the number or length of calls, schedules, response times, bonuses or guarantee conditions.
+Published as n8n version 6260cb47. Tested in Kyrgyz (full pitch) and Russian price list (one line).
