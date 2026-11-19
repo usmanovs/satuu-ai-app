@@ -227,3 +227,5 @@ Every WhatsApp webhook hit is one n8n execution. About two thirds of the main wo
 ## iOS course and Mac (owner, 2026-11-19)
 
 When a customer asks about the iOS course (building iPhone/iOS apps), the bot says early that it is important to have a Mac (MacBook or Mac desktop) and asks if they have one. It has no other iOS course facts (price, dates, program, link), so it invents none and flags the chat for the team. For the main web course the "any ordinary laptop, Windows 7 is fine" facts still apply. Block `IOS COURSE AND MAC` in the `Build Persona` wrapper. TODO: give the bot the iOS course details (price, start date, program, page link) so it can sell it.
+
+**iOS course availability (owner, 2026-11-19):** right now the iOS course is available only as a recording; there are no live classes for it. The bot says this together with the Mac requirement (block `IOS COURSE` in the `Build Persona` wrapper). Price, dates and the page link are still unknown to the bot, so it invents none and flags the chat.
