@@ -248,3 +248,11 @@ guarantee), the price *$2,500* (≈ 218 750 сом), a closing line about a pers
 wording is included in the block; the bot adapts it and does not repeat the full block in the same chat. In a plain price list it stays
 one short line. It never invents the number or length of calls, schedules, response times, bonuses or guarantee conditions.
 Published as n8n version 6260cb47. Tested in Kyrgyz (full pitch) and Russian price list (one line).
+
+## Student example: Stalbek (2026-11-20)
+The "Build Persona" wrapper has a `STUDENT EXAMPLE, STALBEK` block (n8n version 2e0df4a6). Facts confirmed by the owner: Stalbek, one of our
+students, owns a T-shirt printing shop in Bishkek (Panurtex); he created a website himself where customers design their own T-shirts, the first
+of its kind in Kyrgyzstan, which saved him about $3,000 in developer costs. The bot uses it when a customer doubts they can build something
+real, is not technical, asks if learning beats hiring a developer, or is a business owner who needs a site or app. Rules: once per chat, never
+in the first reply (same as the $2,000 story), nothing invented beyond these facts, no link or contact for him, no promise of the same result.
+Tested in Kyrgyz: first reply had no story, the doubt question got it in two short lines plus a question about their project.
