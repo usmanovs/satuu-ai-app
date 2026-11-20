@@ -3,14 +3,15 @@ import { ArrowDownWideNarrow, Search, UserCheck } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { previewText, displayName, formatListTime, formatWait, hotWaitingMin, isHotAlert, isUnread, memberName, needsManager, STATE_LABEL, unreadBadge } from '@/lib/format';
+import { previewText, displayName, formatListTime, formatWait, hotWaitingMin, isHotAlert, isUnread, memberName, needsManager, needsOutcome, STATE_LABEL, unreadBadge } from '@/lib/format';
 import type { Conversation, ConvState, LeadLabel, Member, WaNumber } from '@/lib/types';
 
-export type Filter = 'all' | 'needs_manager' | ConvState;
+export type Filter = 'all' | 'needs_manager' | 'no_outcome' | ConvState;
 
 const FILTERS: { id: Filter; label: string }[] = [
   { id: 'all', label: 'Все' },
   { id: 'needs_manager', label: '🙋 Нужен менеджер' },
+  { id: 'no_outcome', label: '📝 Без итога' },
   { id: 'ai_active', label: 'AI активен' },
   { id: 'human_requested', label: 'Нужен человек' },
   { id: 'human_handling', label: 'У менеджера' },
@@ -62,7 +63,7 @@ export function ConversationList({ conversations, loadError, selectedId, onSelec
   const all = conversations ?? [];
   const q = query.trim().toLowerCase();
   const filtered = all.filter((c) => {
-    if (filter === 'needs_manager' ? !needsManager(c) : filter !== 'all' && c.state !== filter) return false;
+    if (filter === 'needs_manager' ? !needsManager(c) : filter === 'no_outcome' ? !needsOutcome(c, now) : filter !== 'all' && c.state !== filter) return false;
     if (assignee === 'none' && c.assigned_to) return false;
     if (assignee !== 'all' && assignee !== 'none' && c.assigned_to !== assignee) return false;
     if (!q) return true;
@@ -76,7 +77,7 @@ export function ConversationList({ conversations, loadError, selectedId, onSelec
   const rank = (c: Conversation) => (c.contacts?.is_internal ? -3 : c.outcome ? -2 : (needsManager(c) ? 1000 : 0) + (c.lead_score ?? -1));
   const visible = sortByLead ? [...filtered].sort((a, b) => rank(b) - rank(a)) : filtered;
   const counted = all.filter((c) => !c.contacts?.is_internal); // the owner's own chats are listed but never counted
-  const count = (f: Filter) => (f === 'all' ? counted.length : f === 'needs_manager' ? counted.filter(needsManager).length : counted.filter((c) => c.state === f).length);
+  const count = (f: Filter) => (f === 'all' ? counted.length : f === 'needs_manager' ? counted.filter(needsManager).length : f === 'no_outcome' ? counted.filter((c) => needsOutcome(c, now)).length : counted.filter((c) => c.state === f).length);
 
   return (
     <div className="flex h-full min-h-0 flex-col border-r bg-card">
@@ -173,7 +174,7 @@ export function ConversationList({ conversations, loadError, selectedId, onSelec
                       <span className={cn('truncate text-[13px]', unread ? 'text-foreground' : 'text-muted-foreground')}>{previewText(c.last_message_preview)}</span>
                       {unread && <span className="ml-auto grid h-5 min-w-5 shrink-0 place-items-center rounded-full bg-primary px-1.5 text-[11px] font-bold leading-none text-primary-foreground" aria-label={`Непрочитано: ${unreadBadge(c)}`}>{unreadBadge(c)}</span>}
                     </span>
-                    <span className="mt-1.5 flex flex-wrap items-center gap-1.5 empty:hidden">{waiting !== null && <span className={cn('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold', waiting >= 15 ? 'border-red-300 bg-red-50 text-red-800' : 'border-orange-300 bg-orange-50 text-orange-800')} title="Горячий лид ждёт человека: напишите или отправьте голосовое">⏱ ждёт {formatWait(waiting)}</span>}{needsManager(c) && <span className="manager-flag inline-flex items-center gap-1 rounded-full border border-violet-300 bg-violet-50 px-2 py-0.5 text-[11px] font-bold text-violet-800" title={c.manager_needed_reason ?? 'AI просит подключить менеджера'}><span className="wave" role="img" aria-label="Нужен менеджер">🙋</span>Нужен менеджер</span>}{canFilterByAssignee && numbers.length > 1 && <span className="text-[11px] text-muted-foreground" title="Номер WhatsApp, на который написал клиент">☎ {numbers.find((n) => n.id === c.wa_number_id)?.label ?? '—'}</span>}</span>
+                    <span className="mt-1.5 flex flex-wrap items-center gap-1.5 empty:hidden">{waiting !== null && <span className={cn('inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-bold', waiting >= 15 ? 'border-red-300 bg-red-50 text-red-800' : 'border-orange-300 bg-orange-50 text-orange-800')} title="Горячий лид ждёт человека: напишите или отправьте голосовое">⏱ ждёт {formatWait(waiting)}</span>}{needsOutcome(c, now) && <span className="inline-flex items-center gap-1 rounded-full border border-slate-300 bg-slate-50 px-2 py-0.5 text-[11px] font-semibold text-slate-700" title="Клиент молчит 3+ дня. Отметьте итог: купил или не купит, и причину">📝 Итог не отмечен</span>}{needsManager(c) && <span className="manager-flag inline-flex items-center gap-1 rounded-full border border-violet-300 bg-violet-50 px-2 py-0.5 text-[11px] font-bold text-violet-800" title={c.manager_needed_reason ?? 'AI просит подключить менеджера'}><span className="wave" role="img" aria-label="Нужен менеджер">🙋</span>Нужен менеджер</span>}{canFilterByAssignee && numbers.length > 1 && <span className="text-[11px] text-muted-foreground" title="Номер WhatsApp, на который написал клиент">☎ {numbers.find((n) => n.id === c.wa_number_id)?.label ?? '—'}</span>}</span>
                   </span>
                 </button>
               </li>

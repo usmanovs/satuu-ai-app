@@ -185,3 +185,10 @@ export function previewText(p: string | null): string {
   if (p.startsWith('[Голосовое')) return '🎤 Голосовое сообщение';
   return p;
 }
+
+/** Open lead that went quiet for 3+ days and nobody marked the result (bought / won't buy). */
+export const NO_OUTCOME_AFTER_MS = 3 * 24 * 60 * 60 * 1000;
+export function needsOutcome(c: Conversation, now: number): boolean {
+  if (c.contacts?.is_internal || c.outcome || !c.last_message_at) return false;
+  return now - Date.parse(c.last_message_at) >= NO_OUTCOME_AFTER_MS;
+}
