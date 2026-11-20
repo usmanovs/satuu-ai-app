@@ -262,3 +262,7 @@ Owner set: $249 = 22,000 som (was 21,788) and $349 = 30,700 som (was 30,538). $2
 written in the "Build Persona Raw" prompt ("SOM PRICES"); the "Build Persona" wrapper rewrites them on every message with a regex
 (21 788 -> 22 000, 30 538 -> 30 700, any thousands separator). To change prices again, edit the replacements in the wrapper's `fixed` line, or
 better, edit "SOM PRICES" in Build Persona Raw and delete the replacements. n8n version 27f0af37. Tested in Kyrgyz and Russian.
+
+Update (same day): $2,500 is now 220,000 som (about 88 som per dollar, in line with 22,000 and 30,700). The wrapper now applies all three
+replacements (21 788 -> 22 000, 30 538 -> 30 700, 218 750 -> 220 000) over the whole prompt, so the VIP pitch text is covered too.
+n8n version 73f3e98c. The iOS course line ("$200, about 17 500 som") still uses the old rate; at 88 it would be about 17 600.
