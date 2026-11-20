@@ -256,3 +256,9 @@ of its kind in Kyrgyzstan, which saved him about $3,000 in developer costs. The 
 real, is not technical, asks if learning beats hiring a developer, or is a business owner who needs a site or app. Rules: once per chat, never
 in the first reply (same as the $2,000 story), nothing invented beyond these facts, no link or contact for him, no promise of the same result.
 Tested in Kyrgyz: first reply had no story, the doubt question got it in two short lines plus a question about their project.
+
+## Som prices updated (2026-11-20)
+Owner set: $249 = 22,000 som (was 21,788) and $349 = 30,700 som (was 30,538). $2,500 = 218,750 som is unchanged. The old amounts are still
+written in the "Build Persona Raw" prompt ("SOM PRICES"); the "Build Persona" wrapper rewrites them on every message with a regex
+(21 788 -> 22 000, 30 538 -> 30 700, any thousands separator). To change prices again, edit the replacements in the wrapper's `fixed` line, or
+better, edit "SOM PRICES" in Build Persona Raw and delete the replacements. n8n version 27f0af37. Tested in Kyrgyz and Russian.
