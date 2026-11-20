@@ -273,3 +273,9 @@ All course prices in som: $249 = 22,000, $349 = 30,700, $2,500 = 220,000, iOS $2
 ## Product explainer for Recordings and Live (2026-11-20)
 
 Customers did not see the value of Recordings and Live classes when they were only listed. The "Build Persona" wrapper in n8n workflow 1 (version 58ab0f1b) now appends a PRODUCT EXPLAINER block. When a customer asks about formats, what is included, the difference, or hesitates, the bot explains each option and its value (Recordings: video lessons, any time, rewatch, own pace, curator help and tech support in the private group; Live: Zoom classes with Seyitbek Mon/Wed/Fri 20:00 Bishkek, starts November 27, instant answers, recordings kept, group support, includes everything in Recordings). For a bare price question it gives one value phrase per option and offers to explain. It never states the number of live classes (earlier owner rule). Wording came from the owner's Kyrgyz course announcement.
+
+## Manata example and "what you learn and build" block (2026-11-20)
+
+Two more blocks in the n8n "Build Persona" wrapper (workflow 1, version 65fa8591):
+- STUDENT EXAMPLE, MANATA: a student built an online store (working site, deployed, with a database, a portfolio piece) and got a real $42 order. Rules: at most one student story per reply, each story once per chat, never in the first reply, no shop name, links or customer details, no promise of the same result. The owner's screenshot of the order contained a customer's address; none of it is in the bot or the repo.
+- WHAT STUDENTS LEARN AND BUILD: the seven stages (idea, design, the site itself, database and login, AI inside the app, polish and payments, launch and Demo Day) taken from the teacher agenda of the ai-accelerator repo, plus six real student projects described without links or earnings. The bot still does not state the number of live classes (the sales page says 7, the teacher agenda lists 14 classes, so the number is left out on purpose).
