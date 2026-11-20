@@ -266,3 +266,6 @@ better, edit "SOM PRICES" in Build Persona Raw and delete the replacements. n8n 
 Update (same day): $2,500 is now 220,000 som (about 88 som per dollar, in line with 22,000 and 30,700). The wrapper now applies all three
 replacements (21 788 -> 22 000, 30 538 -> 30 700, 218 750 -> 220 000) over the whole prompt, so the VIP pitch text is covered too.
 n8n version 73f3e98c. The iOS course line ("$200, about 17 500 som") still uses the old rate; at 88 it would be about 17 600.
+
+Update (2026-11-20): the iOS course line in the wrapper now says $200 is about 17 600 som (same rate, about 88 som per dollar). n8n version 373ff64b.
+All course prices in som: $249 = 22,000, $349 = 30,700, $2,500 = 220,000, iOS $200 = 17,600.
