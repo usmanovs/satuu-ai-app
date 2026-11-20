@@ -283,3 +283,7 @@ Two more blocks in the n8n "Build Persona" wrapper (workflow 1, version 65fa8591
 ## Average student earnings claim: $600 (2026-11-20)
 
 Added to the "Build Persona" wrapper (n8n version 6e4a65bc) at the owner's request, taken from the course sales page: "on average, students sign 2 contracts and earn about $600 before the course ends". The bot says it only as an average of past students, always with "results depend on the person", at most once per chat, never in the first reply, never as a monthly figure, never multiplied, never tied to the 1:1 plan. If asked, it says plainly that it is an average and not a guarantee. The only guarantee stays the $500 for the 1:1 mentorship. If the figure stops being true, edit the `avg` block in the wrapper.
+
+## First-class refund wording and Discord (2026-11-20)
+
+Added a REFUND AND DISCORD block to the "Build Persona" wrapper (n8n version 0ffdd5d1). Owner-confirmed: if after the first class the student does not like the program, they get a full refund. The bot says "full refund" plainly when asked about refunds or risk, still gives no processing time, fees or method, and keeps the Live Demo Day guarantee separate. The students' community is a private Discord community (the bot no longer says "private group"); no Discord link is given before payment.
