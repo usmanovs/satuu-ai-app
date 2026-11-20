@@ -307,3 +307,7 @@ Fix found while testing: the old "company rate is 87.5 som per dollar" sentence 
 - COURSE LANGUAGE: all courses (Live and Recordings) are in Kyrgyz only. The bot says so plainly to Russian and English speakers and asks whether they understand Kyrgyz; no promise of Russian versions, subtitles or groups.
 
 Note: the workflow was restructured by someone else during this session (new node "Persona Base" feeding "Build Persona Raw" with a CLOSING RULES block, then "Build Persona"). That block says never to claim that an old laptop works and to use [[NEED_MANAGER]] for people who go quiet, which conflicts with the owner-confirmed computer facts in the wrapper (any ordinary laptop, Windows 7 fine). The wrapper blocks come last in the prompt and win in tests; the owner should decide which wording is right.
+
+## Old laptops: one rule (2026-11-20)
+
+Owner decision: any ordinary laptop works, even an old one (Windows 7 fine, about 8-10 years, 4 GB). The "Build Persona Raw" CLOSING RULES (1) used to say the opposite (never say an old laptop works); it now matches the wrapper's CONFIRMED COMPUTER AND FEEDBACK FACTS. Phone-only and no-laptop customers still get the Recordings "start when you have a computer" line and, when they say they will write later, the [[NEED_MANAGER]] flag from that block.
