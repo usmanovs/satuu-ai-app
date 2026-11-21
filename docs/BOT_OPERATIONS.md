@@ -337,3 +337,12 @@ From about 16:02 UTC the bot stopped answering: every run of workflow 1 failed i
 Backlog: the owner approved fixed replies (all say the program is about 2.5 weeks of classes, not "7 lessons"): A, a Russian program overview with Recordings $249 / Live $349 and the Kyrgyz-only question (122 chats); B, the iOS course ($200, Mac, Apple Developer, Claude subscription; 2 chats); C1-C6, short follow-ups to customers who had answered the bot (14 chats). Sent by a one-off n8n workflow "9. One-off: Backlog Replies 2026-11-21" (webhook, one message every 8 seconds from the leads number, each recorded with record-outbound as sender "ai"); unpublished after use. Not answered by design and left to the owner: the giveaway winner who wrote about a 100% discount, the Android Recording questions (no confirmed facts), the booking request from a Russian number, the customer who reported an error, the mother of four, the Instagram lead who wrote in Kyrgyz, chats in human handling, and two reactions.
 
 Open item: nobody is alerted when the bot errors. An alert for "OpenAI no credits" would have caught this at 16:02 instead of hours later.
+
+## AI cost reduction (2026-11-21)
+
+- Agent system message rewritten (7.6k to about 3k characters): the old text still said live classes Tuesday/Thursday/Saturday, recordings "one-time", Lovable and 7 sessions, all contradicted by later blocks.
+- "Build Persona Raw" now drops base-prompt lines that later owner rules replace (program by days, old live-class wording, old som prices and rate, Russia rule replaced by the VPN rule, old mentorship pitch, old example list, old language and refund lines) and holds the som price rule.
+- Short mode: an acknowledgement (ok, thanks, emoji, reaction) or the pre-filled ad greeting gets a short prompt (about 1k characters) and the cheap model gpt-5.4-mini; everything else keeps the full prompt and gpt-6.1-terra. Routing "simple FAQ" questions to the cheap model failed 6 of the 42 regression tests, so it was not kept.
+- Conversation memory 10 to 6 messages; the quiet-lead nudge (workflow 4) uses gpt-5.4-mini.
+- The "Build Persona" wrapper (about 45k characters of owner rules) was NOT condensed: it needs a careful rewrite; it is the next big saving.
+- Regression suite after the changes: 42 of 42 passed.
