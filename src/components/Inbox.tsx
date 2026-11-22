@@ -52,6 +52,13 @@ function dailyMotto(now: number): string {
   return MOTTOS[Math.floor(now / 86_400_000) % MOTTOS.length];
 }
 
+type View = 'inbox' | 'team' | 'analytics';
+const PATHS: Record<View, string> = { inbox: '/', team: '/team', analytics: '/analytics' };
+function viewFromPath(): View {
+  const p = window.location.pathname.replace(/\/+$/, '');
+  return p === '/analytics' ? 'analytics' : p === '/team' ? 'team' : 'inbox';
+}
+
 export function Inbox({ backend, onSignOut, onChangePassword }: Props) {
   const now = useNow(15_000);
   const [theme, toggleTheme] = useTheme();
@@ -62,7 +69,18 @@ export function Inbox({ backend, onSignOut, onChangePassword }: Props) {
   const [filter, setFilter] = useState<Filter>('all');
   const [query, setQuery] = useState('');
   const [sortByLead, setSortByLead] = useState(false);
-  const [view, setView] = useState<'inbox' | 'team' | 'analytics'>('inbox');
+  const [view, setViewState] = useState<View>(viewFromPath);
+  // Each view has its own address (/analytics, /team) so it can be bookmarked and shared.
+  const setView = useCallback((next: View) => {
+    setViewState(next);
+    const path = PATHS[next];
+    if (window.location.pathname !== path) window.history.pushState({}, '', path);
+  }, []);
+  useEffect(() => {
+    const onPop = () => setViewState(viewFromPath());
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
   const [me, setMe] = useState<Me | null>(null);
   const [members, setMembers] = useState<Member[]>([]);
   const [numbers, setNumbers] = useState<WaNumber[]>([]);
