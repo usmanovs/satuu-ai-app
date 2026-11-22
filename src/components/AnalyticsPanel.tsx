@@ -133,11 +133,12 @@ export function AnalyticsPanel({ backend, me }: { backend: InboxBackend; me: Me 
                 </p>
               )}
               <div className="overflow-x-auto rounded-lg border bg-card">
-                <table className="w-full min-w-[620px] text-left text-sm">
+                <table className="w-full min-w-[700px] text-left text-sm">
                   <thead className="border-b bg-muted/60 text-[12px] text-muted-foreground">
                     <tr>
-                      <th className="px-3 py-2 font-medium">Менеджер</th>
-                      <th className="px-3 py-2 font-medium">Назначено</th>
+                      <th className="px-3 py-2 font-medium">Сотрудник</th>
+                      <th className="px-3 py-2 font-medium" title="Сколько лидов назначено человеку за выбранный период">Лидов за период</th>
+                      <th className="px-3 py-2 font-medium" title="Все лиды, закреплённые за человеком сейчас">Всего назначено</th>
                       <th className="px-3 py-2 font-medium">В работе</th>
                       <th className="px-3 py-2 font-medium">Ответов за период</th>
                       <th className="px-3 py-2 font-medium" title="Среднее время от сообщения клиента до ответа менеджера">Ср. ответ, мин</th>
@@ -147,12 +148,13 @@ export function AnalyticsPanel({ backend, me }: { backend: InboxBackend; me: Me 
                     </tr>
                   </thead>
                   <tbody>
-                    {stats.managers.length === 0 && <tr><td colSpan={8} className="px-3 py-6 text-center text-muted-foreground">Менеджеров пока нет.</td></tr>}
+                    {stats.managers.length === 0 && <tr><td colSpan={9} className="px-3 py-6 text-center text-muted-foreground">Сотрудников пока нет.</td></tr>}
                     {stats.managers.map((m) => {
                       const done = m.won + m.lost;
                       return (
                         <tr key={m.user_id} className="border-b last:border-0">
                           <td className="px-3 py-2 font-medium">{m.name ?? '—'}</td>
+                          <td className="px-3 py-2 font-bold">{m.assigned_period}</td>
                           <td className="px-3 py-2">{m.assigned_total}</td>
                           <td className="px-3 py-2">{m.open_now}</td>
                           <td className="px-3 py-2">{m.replies}</td>
