@@ -1,4 +1,4 @@
--- Leads per person: count everyone who holds leads (directors and owner too), and leads assigned within the period.
+-- Leads per person: count managers and anyone else who holds leads (never the owner), and leads assigned within the period.
 create or replace function public.team_stats(p_business uuid, p_user uuid, p_since timestamptz)
 returns jsonb
 language plpgsql stable security definer set search_path = ''
@@ -37,7 +37,8 @@ begin
           and x.created_at >= p_since and prev.ts is not null) as avg_response_min
     from public.business_memberships m
     where m.business_id = p_business and m.active
-      and (m.role in ('manager', 'director')
+      and m.role <> 'owner'
+      and (m.role = 'manager'
            or exists (select 1 from public.conversations c where c.business_id = p_business and c.assigned_to = m.user_id))
       and (v_role in ('owner', 'director') or m.user_id = p_user)
   ) t;
