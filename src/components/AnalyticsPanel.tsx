@@ -133,12 +133,14 @@ export function AnalyticsPanel({ backend, me }: { backend: InboxBackend; me: Me 
                 </p>
               )}
               <div className="overflow-x-auto rounded-lg border bg-card">
-                <table className="w-full min-w-[700px] text-left text-sm">
+                <table className="w-full min-w-[860px] text-left text-sm">
                   <thead className="border-b bg-muted/60 text-[12px] text-muted-foreground">
                     <tr>
                       <th className="px-3 py-2 font-medium">Сотрудник</th>
                       <th className="px-3 py-2 font-medium" title="Сколько лидов назначено человеку за выбранный период">Лидов за период</th>
                       <th className="px-3 py-2 font-medium" title="Все лиды, закреплённые за человеком сейчас">Всего назначено</th>
+                      <th className="px-3 py-2 font-medium" title="Сколько раз человек входил в систему за период. Счёт ведётся с 25 ноября 2026">Входов</th>
+                      <th className="px-3 py-2 font-medium">Последний вход</th>
                       <th className="px-3 py-2 font-medium">В работе</th>
                       <th className="px-3 py-2 font-medium">Ответов за период</th>
                       <th className="px-3 py-2 font-medium" title="Среднее время от сообщения клиента до ответа менеджера">Ср. ответ, мин</th>
@@ -148,7 +150,7 @@ export function AnalyticsPanel({ backend, me }: { backend: InboxBackend; me: Me 
                     </tr>
                   </thead>
                   <tbody>
-                    {stats.managers.length === 0 && <tr><td colSpan={9} className="px-3 py-6 text-center text-muted-foreground">Сотрудников пока нет.</td></tr>}
+                    {stats.managers.length === 0 && <tr><td colSpan={11} className="px-3 py-6 text-center text-muted-foreground">Сотрудников пока нет.</td></tr>}
                     {stats.managers.map((m) => {
                       const done = m.won + m.lost;
                       return (
@@ -156,6 +158,8 @@ export function AnalyticsPanel({ backend, me }: { backend: InboxBackend; me: Me 
                           <td className="px-3 py-2 font-medium">{m.name ?? '—'}</td>
                           <td className="px-3 py-2 font-bold">{m.assigned_period}</td>
                           <td className="px-3 py-2">{m.assigned_total}</td>
+                          <td className="px-3 py-2">{m.logins}</td>
+                          <td className="px-3 py-2 whitespace-nowrap">{m.last_login ? new Date(m.last_login).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}</td>
                           <td className="px-3 py-2">{m.open_now}</td>
                           <td className="px-3 py-2">{m.replies}</td>
                           <td className="px-3 py-2">{m.avg_response_min ?? '—'}</td>
@@ -168,7 +172,7 @@ export function AnalyticsPanel({ backend, me }: { backend: InboxBackend; me: Me 
                   </tbody>
                 </table>
               </div>
-              <p className="text-xs text-muted-foreground">Итоги («Купили» / «Не купили») ставят менеджеры вручную в диалоге. Конверсия = купили / (купили + не купили).</p>
+              <p className="text-xs text-muted-foreground">Итоги («Купили» / «Не купили») ставят менеджеры вручную в диалоге. Конверсия = купили / (купили + не купили). Входы считаются с 25 ноября 2026: раньше известен только последний вход.</p>
             </>
           )}
         </section>
