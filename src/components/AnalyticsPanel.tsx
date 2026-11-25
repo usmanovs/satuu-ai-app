@@ -175,8 +175,8 @@ export function AnalyticsPanel({ backend, me }: { backend: InboxBackend; me: Me 
                     <thead className="border-b bg-muted/60 text-[12px] text-muted-foreground">
                       <tr>
                         <th className="px-3 py-2 font-medium">Сотрудник</th>
-                        <th className="px-3 py-2 font-medium" title="Сколько раз человек входил в систему за выбранный период">Входов за период</th>
                         <th className="px-3 py-2 font-medium">Последний вход</th>
+                        <th className="px-3 py-2 font-medium" title="Сколько раз человек входил в систему за выбранный период">Входов за период</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -184,8 +184,8 @@ export function AnalyticsPanel({ backend, me }: { backend: InboxBackend; me: Me 
                       {[...stats.managers].sort((x, y) => (y.logins - x.logins) || String(y.last_login ?? '').localeCompare(String(x.last_login ?? ''))).map((m) => (
                         <tr key={m.user_id} className="border-b last:border-0">
                           <td className="px-3 py-2 font-medium">{m.name ?? '—'}</td>
-                          <td className="px-3 py-2 font-bold">{m.logins}</td>
                           <td className="px-3 py-2 whitespace-nowrap">{m.last_login ? new Date(m.last_login).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}</td>
+                          <td className="px-3 py-2 font-bold">{m.logins}</td>
                         </tr>
                       ))}
                     </tbody>
