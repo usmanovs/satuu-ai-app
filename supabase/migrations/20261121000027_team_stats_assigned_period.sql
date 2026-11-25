@@ -18,6 +18,8 @@ begin
       (select count(*) from public.conversations c
         where c.business_id = p_business and c.assigned_to = m.user_id and c.assigned_at >= p_since) as assigned_period,
       (select count(*) from public.login_events e where e.user_id = m.user_id and e.created_at >= p_since) as logins,
+      (select count(*) from public.login_events e where e.user_id = m.user_id and e.created_at >= (date_trunc('day', now() at time zone 'Asia/Bishkek') at time zone 'Asia/Bishkek')) as logins_today,
+      (select count(*) from public.login_events e where e.user_id = m.user_id and e.created_at >= now() - interval '7 days') as logins_7d,
       (select u.last_sign_in_at from auth.users u where u.id = m.user_id) as last_login,
       (select count(*) from public.conversations c
         where c.business_id = p_business and c.assigned_to = m.user_id and c.outcome is null

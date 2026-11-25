@@ -11,7 +11,7 @@ export type Role = 'owner' | 'director' | 'manager';
 export interface Me { user_id: string; role: Role; email: string | null; display_name: string | null }
 export interface Member { user_id: string; email: string | null; display_name: string | null; role: Role; active: boolean }
 export interface ManagerStats {
-  user_id: string; name: string | null; assigned_total: number; assigned_period: number; logins: number; last_login: string | null; open_now: number; replies: number; won: number; lost: number;
+  user_id: string; name: string | null; assigned_total: number; assigned_period: number; logins: number; logins_today: number; logins_7d: number; last_login: string | null; open_now: number; replies: number; won: number; lost: number;
   avg_response_min: number | null;
 }
 export interface TeamStats {

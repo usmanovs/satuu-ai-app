@@ -171,21 +171,23 @@ export function AnalyticsPanel({ backend, me }: { backend: InboxBackend; me: Me 
               <div className="space-y-2">
                 <h3 className="text-sm font-bold">Входы в систему</h3>
                 <div className="overflow-x-auto rounded-lg border bg-card">
-                  <table className="w-full min-w-[420px] text-left text-sm">
+                  <table className="w-full min-w-[460px] text-left text-sm">
                     <thead className="border-b bg-muted/60 text-[12px] text-muted-foreground">
                       <tr>
                         <th className="px-3 py-2 font-medium">Сотрудник</th>
                         <th className="px-3 py-2 font-medium">Последний вход</th>
-                        <th className="px-3 py-2 font-medium" title="Сколько раз человек входил в систему за выбранный период">Входов за период</th>
+                        <th className="px-3 py-2 font-medium" title="Входов с начала сегодняшнего дня (по времени Бишкека)">Сегодня</th>
+                        <th className="px-3 py-2 font-medium" title="Входов за последние 7 дней">За 7 дней</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {stats.managers.length === 0 && <tr><td colSpan={3} className="px-3 py-6 text-center text-muted-foreground">Сотрудников пока нет.</td></tr>}
-                      {[...stats.managers].sort((x, y) => (y.logins - x.logins) || String(y.last_login ?? '').localeCompare(String(x.last_login ?? ''))).map((m) => (
+                      {stats.managers.length === 0 && <tr><td colSpan={4} className="px-3 py-6 text-center text-muted-foreground">Сотрудников пока нет.</td></tr>}
+                      {[...stats.managers].sort((x, y) => (y.logins_7d - x.logins_7d) || String(y.last_login ?? '').localeCompare(String(x.last_login ?? ''))).map((m) => (
                         <tr key={m.user_id} className="border-b last:border-0">
                           <td className="px-3 py-2 font-medium">{m.name ?? '—'}</td>
                           <td className="px-3 py-2 whitespace-nowrap">{m.last_login ? new Date(m.last_login).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}</td>
-                          <td className="px-3 py-2 font-bold">{m.logins}</td>
+                          <td className="px-3 py-2 font-bold">{m.logins_today}</td>
+                          <td className="px-3 py-2 font-bold">{m.logins_7d}</td>
                         </tr>
                       ))}
                     </tbody>
