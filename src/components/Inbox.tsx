@@ -222,22 +222,28 @@ export function Inbox({ backend, onSignOut, onChangePassword }: Props) {
     }
   }, [convs]);
   const managerCount = (convs ?? []).filter(needsManager).length;
+  const [alertsOpen, setAlertsOpen] = useState(false);
 
   return (
     <div className="flex h-dvh flex-col">
       {botAlerts.length > 0 && me?.role !== 'manager' && (
-        <div className="border-b border-red-200 bg-red-50 px-4 py-2 text-sm text-red-900" role="alert">
-          {botAlerts.map((a) => (
-            <p key={a.id} className="flex flex-wrap items-baseline gap-x-2">
-              <span aria-hidden>{a.kind === 'tests_failed' ? '🧪' : '⚠️'}</span>
-              <b>{a.title}</b>
-              {a.detail && <span className="text-red-800/90">{a.detail}</span>}
-              <span className="text-xs text-red-700/80">
-                {a.occurrences > 1 ? `${a.occurrences} раз · ` : ''}последний раз {formatAgo(a.last_seen_at, now)}
-              </span>
-            </p>
-          ))}
-          <p className="mt-0.5 text-xs text-red-700/80">Предупреждение исчезнет само: когда бот снова ответит клиенту или автотесты пройдут.</p>
+        <div className="border-b border-red-200 bg-red-50 px-4 py-1.5 text-[13px] text-red-900" role="alert">
+          <button type="button" onClick={() => setAlertsOpen((v) => !v)} aria-expanded={alertsOpen} className="flex w-full items-center gap-2 text-left">
+            <span aria-hidden>⚠️</span>
+            <span className="min-w-0 flex-1 truncate"><b>Проблемы с ботом ({botAlerts.length}):</b> {botAlerts.map((a) => a.title).join(' · ')}</span>
+            <span className="shrink-0 text-xs text-red-700">{alertsOpen ? 'Скрыть' : 'Подробнее'}</span>
+          </button>
+          {alertsOpen && (
+            <div className="mt-1.5 max-h-48 space-y-1.5 overflow-y-auto">
+              {botAlerts.map((a) => (
+                <div key={a.id}>
+                  <p><span aria-hidden>{a.kind === 'tests_failed' ? '🧪' : '⚠️'}</span> <b>{a.title}</b> <span className="text-xs text-red-700/80">{a.occurrences > 1 ? `${a.occurrences} раз · ` : ''}последний раз {formatAgo(a.last_seen_at, now)}</span></p>
+                  {a.detail && <p className="line-clamp-3 break-words text-xs text-red-800/90">{a.detail}</p>}
+                </div>
+              ))}
+              <p className="text-xs text-red-700/80">Предупреждение исчезнет само: когда бот снова ответит клиенту или автотесты пройдут.</p>
+            </div>
+          )}
         </div>
       )}
       <header className={`${selectedId ? 'hidden md:flex' : 'flex'} items-center gap-3 border-b bg-card px-4 py-2.5`}>
