@@ -140,7 +140,7 @@ export function AnalyticsPanel({ backend, me }: { backend: InboxBackend; me: Me 
                       <th className="px-3 py-2 font-medium" title="Сколько лидов назначено человеку за выбранный период">Лидов за период</th>
                       <th className="px-3 py-2 font-medium" title="Все лиды, закреплённые за человеком сейчас">Всего назначено</th>
                       <th className="px-3 py-2 font-medium">В работе</th>
-                      <th className="px-3 py-2 font-medium">Ответов за период</th>
+                      <th className="px-3 py-2 font-medium" title="Сообщений клиентам, отправленных этим сотрудником из приложения за выбранный период">Сообщений отправлено</th>
                       <th className="px-3 py-2 font-medium" title="Среднее время от сообщения клиента до ответа менеджера">Ср. ответ, мин</th>
                       <th className="px-3 py-2 font-medium">Купили</th>
                       <th className="px-3 py-2 font-medium">Не купили</th>
@@ -157,7 +157,7 @@ export function AnalyticsPanel({ backend, me }: { backend: InboxBackend; me: Me 
                           <td className="px-3 py-2 font-bold">{m.assigned_period}</td>
                           <td className="px-3 py-2">{m.assigned_total}</td>
                           <td className="px-3 py-2">{m.open_now}</td>
-                          <td className="px-3 py-2">{m.replies}</td>
+                          <td className="px-3 py-2 font-bold">{m.replies}</td>
                           <td className="px-3 py-2">{m.avg_response_min ?? '—'}</td>
                           <td className="px-3 py-2">{m.won}</td>
                           <td className="px-3 py-2">{m.lost}</td>
