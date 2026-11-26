@@ -15,6 +15,120 @@ function Card({ label, value, tone, Icon, iconTone = 'text-slate-500' }: { label
   );
 }
 
+type Mgr = TeamStats['managers'][number];
+type SortState = { key: string; dir: 'asc' | 'desc' };
+
+/** Click a header to sort; click again to flip. Empty values always go last. */
+function useSort(initial: SortState) {
+  const [sort, setSort] = useState<SortState>(initial);
+  const toggle = (key: string) => setSort((s) => (s.key === key ? { key, dir: s.dir === 'desc' ? 'asc' : 'desc' } : { key, dir: key === 'name' ? 'asc' : 'desc' }));
+  return { sort, toggle };
+}
+function sortRows<T>(rows: T[], sort: SortState, get: (r: T, key: string) => number | string | null): T[] {
+  return [...rows].sort((a, b) => {
+    const x = get(a, sort.key); const y = get(b, sort.key);
+    if (x === null && y === null) return 0;
+    if (x === null) return 1;
+    if (y === null) return -1;
+    const c = typeof x === 'string' || typeof y === 'string' ? String(x).localeCompare(String(y)) : x - y;
+    return sort.dir === 'asc' ? c : -c;
+  });
+}
+function SortTh({ k, sort, toggle, title, children }: { k: string; sort: SortState; toggle: (k: string) => void; title?: string; children: React.ReactNode }) {
+  const active = sort.key === k;
+  return (
+    <th className="px-3 py-2 font-medium" title={title} aria-sort={active ? (sort.dir === 'asc' ? 'ascending' : 'descending') : 'none'}>
+      <button type="button" onClick={() => toggle(k)} className="inline-flex items-center gap-1 text-left font-medium hover:text-foreground">
+        {children}<span className={active ? 'text-foreground' : 'opacity-30'} aria-hidden>{active ? (sort.dir === 'asc' ? '▲' : '▼') : '↕'}</span>
+      </button>
+    </th>
+  );
+}
+
+function SalesTable({ managers }: { managers: Mgr[] }) {
+  const { sort, toggle } = useSort({ key: 'assigned_period', dir: 'desc' });
+  const rows = sortRows(managers, sort, (m, k) => {
+    if (k === 'name') return (m.name ?? '').toLowerCase();
+    if (k === 'conv') return m.won + m.lost > 0 ? m.won / (m.won + m.lost) : null;
+    if (k === 'avg_response_min') return m.avg_response_min;
+    return (m as unknown as Record<string, number>)[k] ?? null;
+  });
+  const th = { sort, toggle };
+  return (
+    <div className="overflow-x-auto rounded-lg border bg-card">
+      <table className="w-full min-w-[700px] text-left text-sm">
+        <thead className="border-b bg-muted/60 text-[12px] text-muted-foreground">
+          <tr>
+            <SortTh k="name" {...th}>Сотрудник</SortTh>
+            <SortTh k="assigned_period" {...th} title="Сколько лидов назначено человеку за выбранный период">Лидов за период</SortTh>
+            <SortTh k="assigned_total" {...th} title="Все лиды, закреплённые за человеком сейчас">Всего назначено</SortTh>
+            <SortTh k="open_now" {...th}>В работе</SortTh>
+            <SortTh k="replies" {...th} title="Сообщений клиентам, отправленных этим сотрудником из приложения за выбранный период">Сообщений отправлено</SortTh>
+            <SortTh k="avg_response_min" {...th} title="Среднее время от сообщения клиента до ответа менеджера">Ср. ответ, мин</SortTh>
+            <SortTh k="won" {...th}>Купили</SortTh>
+            <SortTh k="lost" {...th}>Не купили</SortTh>
+            <SortTh k="conv" {...th}>Конверсия</SortTh>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.length === 0 && <tr><td colSpan={9} className="px-3 py-6 text-center text-muted-foreground">Сотрудников пока нет.</td></tr>}
+          {rows.map((m) => {
+            const done = m.won + m.lost;
+            return (
+              <tr key={m.user_id} className="border-b last:border-0">
+                <td className="px-3 py-2 font-medium">{m.name ?? '—'}</td>
+                <td className="px-3 py-2 font-bold">{m.assigned_period}</td>
+                <td className="px-3 py-2">{m.assigned_total}</td>
+                <td className="px-3 py-2">{m.open_now}</td>
+                <td className="px-3 py-2 font-bold">{m.replies}</td>
+                <td className="px-3 py-2">{m.avg_response_min ?? '—'}</td>
+                <td className="px-3 py-2">{m.won}</td>
+                <td className="px-3 py-2">{m.lost}</td>
+                <td className="px-3 py-2">{done > 0 ? `${Math.round((m.won / done) * 100)}%` : '—'}</td>
+              </tr>
+            );
+          })}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function ActivityTable({ managers }: { managers: Mgr[] }) {
+  const { sort, toggle } = useSort({ key: 'opens_7d', dir: 'desc' });
+  const rows = sortRows(managers, sort, (m, k) => {
+    if (k === 'name') return (m.name ?? '').toLowerCase();
+    if (k === 'last_login') return m.last_login ? Date.parse(m.last_login) : null;
+    return (m as unknown as Record<string, number>)[k] ?? null;
+  });
+  const th = { sort, toggle };
+  return (
+    <div className="overflow-x-auto rounded-lg border bg-card">
+      <table className="w-full min-w-[460px] text-left text-sm">
+        <thead className="border-b bg-muted/60 text-[12px] text-muted-foreground">
+          <tr>
+            <SortTh k="name" {...th}>Сотрудник</SortTh>
+            <SortTh k="last_login" {...th}>Последняя активность</SortTh>
+            <SortTh k="opens_24h" {...th} title="Сколько раз открыл приложение за последние 24 часа">Открытий за сутки</SortTh>
+            <SortTh k="opens_7d" {...th} title="Сколько раз открыл приложение за последние 7 дней">Открытий за 7 дней</SortTh>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.length === 0 && <tr><td colSpan={4} className="px-3 py-6 text-center text-muted-foreground">Сотрудников пока нет.</td></tr>}
+          {rows.map((m) => (
+            <tr key={m.user_id} className="border-b last:border-0">
+              <td className="px-3 py-2 font-medium">{m.name ?? '—'}</td>
+              <td className="px-3 py-2 whitespace-nowrap">{m.last_login ? new Date(m.last_login).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}</td>
+              <td className="px-3 py-2 font-bold">{m.opens_24h}</td>
+              <td className="px-3 py-2 font-bold">{m.opens_7d}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 const FUNNEL_STEPS: { key: keyof FunnelStats; label: string; hint: string; Icon: LucideIcon; tone: string }[] = [
   { key: 'leads', label: 'Лиды', hint: 'Новые диалоги за период', Icon: Users, tone: 'text-slate-500' },
   { key: 'dialog', label: 'Диалог', hint: 'Клиент написал 3 раза и больше', Icon: MessagesSquare, tone: 'text-sky-500' },
@@ -132,67 +246,10 @@ export function AnalyticsPanel({ backend, me }: { backend: InboxBackend; me: Me 
                   {Object.entries(reasons).sort((a, b) => b[1] - a[1]).map(([k, n]) => `${k === 'none' ? 'без причины' : LOST_REASON_LABEL[k as LostReason] ?? k} ${n}`).join(' · ')}
                 </p>
               )}
-              <div className="overflow-x-auto rounded-lg border bg-card">
-                <table className="w-full min-w-[700px] text-left text-sm">
-                  <thead className="border-b bg-muted/60 text-[12px] text-muted-foreground">
-                    <tr>
-                      <th className="px-3 py-2 font-medium">Сотрудник</th>
-                      <th className="px-3 py-2 font-medium" title="Сколько лидов назначено человеку за выбранный период">Лидов за период</th>
-                      <th className="px-3 py-2 font-medium" title="Все лиды, закреплённые за человеком сейчас">Всего назначено</th>
-                      <th className="px-3 py-2 font-medium">В работе</th>
-                      <th className="px-3 py-2 font-medium" title="Сообщений клиентам, отправленных этим сотрудником из приложения за выбранный период">Сообщений отправлено</th>
-                      <th className="px-3 py-2 font-medium" title="Среднее время от сообщения клиента до ответа менеджера">Ср. ответ, мин</th>
-                      <th className="px-3 py-2 font-medium">Купили</th>
-                      <th className="px-3 py-2 font-medium">Не купили</th>
-                      <th className="px-3 py-2 font-medium">Конверсия</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {stats.managers.length === 0 && <tr><td colSpan={9} className="px-3 py-6 text-center text-muted-foreground">Сотрудников пока нет.</td></tr>}
-                    {stats.managers.map((m) => {
-                      const done = m.won + m.lost;
-                      return (
-                        <tr key={m.user_id} className="border-b last:border-0">
-                          <td className="px-3 py-2 font-medium">{m.name ?? '—'}</td>
-                          <td className="px-3 py-2 font-bold">{m.assigned_period}</td>
-                          <td className="px-3 py-2">{m.assigned_total}</td>
-                          <td className="px-3 py-2">{m.open_now}</td>
-                          <td className="px-3 py-2 font-bold">{m.replies}</td>
-                          <td className="px-3 py-2">{m.avg_response_min ?? '—'}</td>
-                          <td className="px-3 py-2">{m.won}</td>
-                          <td className="px-3 py-2">{m.lost}</td>
-                          <td className="px-3 py-2">{done > 0 ? `${Math.round((m.won / done) * 100)}%` : '—'}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+              <SalesTable managers={stats.managers} />
               <div className="space-y-2">
                 <h3 className="text-sm font-bold">Активность в приложении</h3>
-                <div className="overflow-x-auto rounded-lg border bg-card">
-                  <table className="w-full min-w-[460px] text-left text-sm">
-                    <thead className="border-b bg-muted/60 text-[12px] text-muted-foreground">
-                      <tr>
-                        <th className="px-3 py-2 font-medium">Сотрудник</th>
-                        <th className="px-3 py-2 font-medium">Последняя активность</th>
-                        <th className="px-3 py-2 font-medium" title="Сколько раз открыл приложение за последние 24 часа">Открытий за сутки</th>
-                        <th className="px-3 py-2 font-medium" title="Сколько раз открыл приложение за последние 7 дней">Открытий за 7 дней</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {stats.managers.length === 0 && <tr><td colSpan={4} className="px-3 py-6 text-center text-muted-foreground">Сотрудников пока нет.</td></tr>}
-                      {[...stats.managers].sort((x, y) => (y.opens_7d - x.opens_7d) || String(y.last_login ?? '').localeCompare(String(x.last_login ?? ''))).map((m) => (
-                        <tr key={m.user_id} className="border-b last:border-0">
-                          <td className="px-3 py-2 font-medium">{m.name ?? '—'}</td>
-                          <td className="px-3 py-2 whitespace-nowrap">{m.last_login ? new Date(m.last_login).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}</td>
-                          <td className="px-3 py-2 font-bold">{m.opens_24h}</td>
-                          <td className="px-3 py-2 font-bold">{m.opens_7d}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
+                <ActivityTable managers={stats.managers} />
                 <p className="text-xs text-muted-foreground">Открытие = человек открыл или обновил страницу приложения (не чаще раза в 10 минут). Счёт ведётся с 26 ноября 2026, раньше такие данные не собирались. «Последняя активность» учитывает и тех, кто не выходит из системы. Время показано в вашем часовом поясе.</p>
               </div>
               <p className="text-xs text-muted-foreground">Итоги («Купили» / «Не купили») ставят менеджеры вручную в диалоге. Конверсия = купили / (купили + не купили).</p>
