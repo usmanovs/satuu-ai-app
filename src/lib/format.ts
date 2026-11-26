@@ -112,7 +112,7 @@ export function sameDay(a: number, b: number): boolean {
   return new Date(a).toDateString() === new Date(b).toDateString();
 }
 export function formatTime(iso: string): string {
-  return timeFmt.format(new Date(iso));
+  return dateTimeFmt.format(new Date(iso)).replace(',', '');
 }
 /** Chat list time: "только что", "5 мин назад", "3 ч назад" for the last 24 hours, then the date. */
 export function formatListTime(iso: string | null, now: number = Date.now()): string {
