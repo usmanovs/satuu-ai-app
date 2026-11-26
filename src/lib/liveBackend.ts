@@ -167,6 +167,11 @@ export function createLiveBackend(supabase: SupabaseClient, functionsBaseUrl: st
     addNumber: (input) => simple('inbox/number-add', input),
 
     async me(): Promise<Me> {
+      // Count this page load as one "app open" (at most once per 10 minutes per browser).
+      try {
+        const last = Number(sessionStorage.getItem('satuu_last_open') ?? 0);
+        if (Date.now() - last > 600_000) { sessionStorage.setItem('satuu_last_open', String(Date.now())); void supabase.rpc('log_app_open').then(() => undefined, () => undefined); }
+      } catch { /* storage blocked: skip counting */ }
       const r = await callFn('inbox/me', undefined, 'GET');
       if (r.status !== 200) throw new Error(r.json?.error?.message ?? 'me unavailable');
       return r.json as Me;

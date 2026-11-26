@@ -176,24 +176,24 @@ export function AnalyticsPanel({ backend, me }: { backend: InboxBackend; me: Me 
                       <tr>
                         <th className="px-3 py-2 font-medium">Сотрудник</th>
                         <th className="px-3 py-2 font-medium">Последняя активность</th>
-                        <th className="px-3 py-2 font-medium" title="Заходил ли сегодня в приложение (по времени Бишкека)">Сегодня</th>
-                        <th className="px-3 py-2 font-medium" title="В скольких из последних 7 дней человек открывал приложение">Дней из 7</th>
+                        <th className="px-3 py-2 font-medium" title="Сколько раз открыл приложение за последние 24 часа">Открытий за сутки</th>
+                        <th className="px-3 py-2 font-medium" title="Сколько раз открыл приложение за последние 7 дней">Открытий за 7 дней</th>
                       </tr>
                     </thead>
                     <tbody>
                       {stats.managers.length === 0 && <tr><td colSpan={4} className="px-3 py-6 text-center text-muted-foreground">Сотрудников пока нет.</td></tr>}
-                      {[...stats.managers].sort((x, y) => (y.logins_7d - x.logins_7d) || String(y.last_login ?? '').localeCompare(String(x.last_login ?? ''))).map((m) => (
+                      {[...stats.managers].sort((x, y) => (y.opens_7d - x.opens_7d) || String(y.last_login ?? '').localeCompare(String(x.last_login ?? ''))).map((m) => (
                         <tr key={m.user_id} className="border-b last:border-0">
                           <td className="px-3 py-2 font-medium">{m.name ?? '—'}</td>
                           <td className="px-3 py-2 whitespace-nowrap">{m.last_login ? new Date(m.last_login).toLocaleString('ru-RU', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—'}</td>
-                          <td className="px-3 py-2 font-bold">{m.logins_today > 0 ? <span className="text-emerald-600">✓ был</span> : <span className="font-normal text-muted-foreground">—</span>}</td>
-                          <td className="px-3 py-2 font-bold">{m.logins_7d}</td>
+                          <td className="px-3 py-2 font-bold">{m.opens_24h}</td>
+                          <td className="px-3 py-2 font-bold">{m.opens_7d}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-                <p className="text-xs text-muted-foreground">Считаем, когда приложение было открыто (оно обновляет сессию примерно раз в час), а не только вход по паролю: так видно и тех, кто не выходит из системы. Время показано в вашем часовом поясе.</p>
+                <p className="text-xs text-muted-foreground">Открытие = человек открыл или обновил страницу приложения (не чаще раза в 10 минут). Счёт ведётся с 26 ноября 2026, раньше такие данные не собирались. «Последняя активность» учитывает и тех, кто не выходит из системы. Время показано в вашем часовом поясе.</p>
               </div>
               <p className="text-xs text-muted-foreground">Итоги («Купили» / «Не купили») ставят менеджеры вручную в диалоге. Конверсия = купили / (купили + не купили).</p>
             </>
