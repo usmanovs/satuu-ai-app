@@ -1,0 +1,78 @@
+-- Activity = fresh sign-ins plus session refreshes (the app refreshes about hourly while open), so people who stay signed in are counted too.
+create or replace function public.member_activity(p_user uuid)
+returns table(at timestamptz, d date)
+language sql stable security definer set search_path = ''
+as $f$
+  select x.at, (x.at at time zone 'Asia/Bishkek')::date from (
+    select t.created_at as at from auth.refresh_tokens t where t.user_id::text = p_user::text
+    union all select e.created_at from public.login_events e where e.user_id = p_user
+    union all select u.last_sign_in_at from auth.users u where u.id = p_user and u.last_sign_in_at is not null
+  ) x;
+$f$;
+revoke all on function public.member_activity(uuid) from public, anon, authenticated;
+
+-- Leads per person: count managers and anyone else who holds leads (never the owner), and leads assigned within the period.
+create or replace function public.team_stats(p_business uuid, p_user uuid, p_since timestamptz)
+returns jsonb
+language plpgsql stable security definer set search_path = ''
+as $$
+declare
+  v_role text := public.member_role(p_business, p_user);
+  v_rows jsonb;
+  v_sum jsonb;
+begin
+  if v_role is null then raise exception 'forbidden'; end if;
+
+  select coalesce(jsonb_agg(to_jsonb(t) order by t.assigned_period desc, t.name), '[]'::jsonb) into v_rows
+  from (
+    select m.user_id, coalesce(nullif(m.display_name, ''), m.email) as name,
+      (select count(*) from public.conversations c
+        where c.business_id = p_business and c.assigned_to = m.user_id) as assigned_total,
+      (select count(*) from public.conversations c
+        where c.business_id = p_business and c.assigned_to = m.user_id and c.assigned_at >= p_since) as assigned_period,
+      (select count(distinct a.d) from public.member_activity(m.user_id) a where a.at >= p_since) as logins,
+      (select count(distinct a.d) from public.member_activity(m.user_id) a where a.at >= (date_trunc('day', now() at time zone 'Asia/Bishkek') at time zone 'Asia/Bishkek')) as logins_today,
+      (select count(distinct a.d) from public.member_activity(m.user_id) a where a.at >= now() - interval '7 days') as logins_7d,
+      (select max(a.at) from public.member_activity(m.user_id) a) as last_login,
+      (select count(*) from public.conversations c
+        where c.business_id = p_business and c.assigned_to = m.user_id and c.outcome is null
+          and c.state in ('human_requested', 'human_handling')) as open_now,
+      (select count(*) from public.messages x
+        where x.business_id = p_business and x.sender_user_id = m.user_id and x.sender_role = 'manager'
+          and x.created_at >= p_since and x.status <> 'failed') as replies,
+      (select count(*) from public.conversations c
+        where c.business_id = p_business and c.assigned_to = m.user_id and c.outcome = 'won' and c.outcome_at >= p_since) as won,
+      (select count(*) from public.conversations c
+        where c.business_id = p_business and c.assigned_to = m.user_id and c.outcome = 'lost' and c.outcome_at >= p_since) as lost,
+      (select round(avg(extract(epoch from (x.created_at - prev.ts)) / 60)::numeric, 1)
+         from public.messages x
+         cross join lateral (
+           select max(y.message_timestamp) as ts from public.messages y
+            where y.conversation_id = x.conversation_id and y.sender_role = 'customer'
+              and y.message_timestamp <= x.created_at) prev
+        where x.business_id = p_business and x.sender_user_id = m.user_id and x.sender_role = 'manager'
+          and x.created_at >= p_since and prev.ts is not null) as avg_response_min
+    from public.business_memberships m
+    where m.business_id = p_business and m.active
+      and m.role <> 'owner'
+      and (m.role = 'manager'
+           or exists (select 1 from public.conversations c where c.business_id = p_business and c.assigned_to = m.user_id))
+      and (v_role in ('owner', 'director') or m.user_id = p_user)
+  ) t;
+
+  select jsonb_build_object(
+    'total', count(*),
+    'ai_active', count(*) filter (where c.state = 'ai_active'),
+    'human_requested', count(*) filter (where c.state = 'human_requested'),
+    'human_handling', count(*) filter (where c.state = 'human_handling'),
+    'unassigned', count(*) filter (where c.assigned_to is null),
+    'hot_open', count(*) filter (where c.lead_label = 'hot' and c.outcome is null),
+    'won', count(*) filter (where c.outcome = 'won'),
+    'lost', count(*) filter (where c.outcome = 'lost'))
+  into v_sum
+  from public.conversations c
+  where c.business_id = p_business and (v_role in ('owner', 'director') or c.assigned_to = p_user);
+
+  return jsonb_build_object('role', v_role, 'since', p_since, 'managers', v_rows, 'summary', v_sum);
+end;
+$$;
