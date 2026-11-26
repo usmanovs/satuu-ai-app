@@ -99,6 +99,7 @@ button:disabled { cursor: not-allowed; }
   --color-sky-50: #112a38; --color-sky-200: #1f4a62; --color-sky-500: #4fb6ea; --color-sky-700: #7cc8f0;
   --color-violet-50: #271d44; --color-violet-300: #5b46a0; --color-violet-800: #cdbcff;
   --color-orange-50: #3a2412; --color-orange-300: #8a521f; --color-orange-800: #fbc18a;
+  --color-pink-50: #3d1a2c; --color-pink-200: #7a2f56; --color-pink-700: #f4a8cf; --color-pink-950: #fde3f0;
   --color-fuchsia-100: #3d1c3c; --color-fuchsia-800: #f2b4ee;
 }
 .dark .scroll-thin::-webkit-scrollbar-thumb { background: #34463d; }
