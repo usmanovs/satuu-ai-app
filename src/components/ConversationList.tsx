@@ -23,7 +23,7 @@ export const leadTone = { hot: 'red', warm: 'amber', cold: 'neutral' } as const;
 /** What the manager sees: the real outcome wins over the AI estimate. */
 export function LeadBadge({ c }: { c: Conversation }) {
   if (c.contacts?.is_internal) return <Badge tone="neutral" title="Ваш собственный чат: не считается лидом">Мой чат</Badge>;
-  if (c.outcome === 'won') return <Badge tone="emerald">Купил</Badge>;
+  if (c.outcome === 'won') return <Badge tone="emerald" className="bg-emerald-600 px-2.5 py-1 text-xs font-bold text-white ring-2 ring-emerald-400/50">💰 КУПИЛ</Badge>;
   if (c.outcome === 'lost') return <Badge tone="neutral">Не купит</Badge>;
   if (c.lead_score === null || c.lead_label === null) return null;
   return <Badge tone={leadTone[c.lead_label]} title={c.lead_reason ?? undefined}>{LEAD_LABEL[c.lead_label]} · {c.lead_score}</Badge>;
@@ -151,7 +151,7 @@ export function ConversationList({ conversations, loadError, selectedId, onSelec
                 <button
                   onClick={() => onSelect(c.id)}
                   aria-current={selectedId === c.id}
-                  className={cn('flex w-full items-start gap-3 border-b px-3 py-3 text-left transition-colors hover:bg-muted/70', selectedId === c.id && 'bg-accent hover:bg-accent')}
+                  className={cn('flex w-full items-start gap-3 border-b px-3 py-3 text-left transition-colors hover:bg-muted/70', c.outcome === 'won' && 'border-l-4 border-l-emerald-500 bg-emerald-500/10', selectedId === c.id && 'bg-accent hover:bg-accent')}
                 >
                   <span className="mt-0.5 grid size-10 shrink-0 place-items-center rounded-full bg-muted text-sm font-semibold text-muted-foreground">{initials(name)}</span>
                   <span className="min-w-0 flex-1">

@@ -136,6 +136,11 @@ export function ChatPanel({ conv, messages, integration, now, pendingAction, act
           )}
         </div>
       </header>
+      {conv.outcome === 'won' && (
+        <div className="flex items-center gap-2 border-b border-emerald-500/40 bg-emerald-600 px-4 py-2 text-sm font-bold text-white">
+          <span role="img" aria-label="Купил">💰</span> Клиент купил{conv.purchased_option ? ` · ${PURCHASED_OPTION_LABEL[conv.purchased_option]}` : ''}
+        </div>
+      )}
 
       <button
         type="button" onClick={() => setShowInfo((v) => !v)} aria-expanded={showInfo}
